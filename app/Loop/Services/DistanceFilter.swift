@@ -18,6 +18,10 @@ struct DistanceFilter {
     static let maxAccuracy: Double = 25
     /// A fix at or below this accuracy is "good" and its position is trusted for distance.
     static let goodAccuracy: Double = 12
+    /// A fix up to this accuracy is also trusted when it carries a valid Doppler speed, which only
+    /// comes with a satellite lock. City streets often report ~14 m with a solid lock; indoor
+    /// Wi-Fi and cell fixes carry no Doppler speed, so they stay "poor".
+    static let dopplerGoodAccuracy: Double = 20
     /// Minimum move from the anchor before a good fix counts.
     static let goodMinStep: Double = 4
     /// Minimum move from the anchor before a poor fix counts (no pedometer distance).
@@ -89,7 +93,7 @@ struct DistanceFilter {
         if let t = lastT, f.timestamp <= t { return .reject }
 
         let loc = stamped(CLLocation(latitude: f.lat, longitude: f.lon), f.timestamp)
-        let good = f.hAcc <= Self.goodAccuracy
+        let good = f.hAcc <= Self.goodAccuracy || (f.hAcc <= Self.dopplerGoodAccuracy && f.speed >= 0)
         let stepMode = !good && usesSteps && pedoDistance != nil
 
         if paused || reanchor || anchor == nil {

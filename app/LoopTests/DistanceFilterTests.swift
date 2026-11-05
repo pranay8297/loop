@@ -224,4 +224,31 @@ struct DistanceFilterTests {
         print("replay total", total, "straight", straight)
         #expect(abs(total - straight) <= 0.03 * straight)
     }
+
+    /// From a real walk (5 Nov, Abu Dhabi): GPS reported ~14 m accuracy with a valid Doppler speed
+    /// for 25 minutes, and step-based distance read 19% short. A Doppler-backed fix is trusted.
+    @Test func cityStreetsWithDopplerTrustGPS() {
+        var s = Sim(kind: .walk)
+        var w = Wobble(sigma: 3)
+        s.run(seconds: 1200, v: 1.3, wobble: &w, hAcc: 13.5...14.5, stepsPerMin: 70, metersPerStep: 0.75)
+        print("cityStreets total", s.total, "true", s.x)
+        #expect(abs(s.total - s.x) <= 0.06 * s.x)
+    }
+
+    /// Local only: replays a real recorded route if LOOP_REAL_ROUTE points at one. Real routes stay
+    /// out of the repo (they show where someone lives); without the variable this test is skipped.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["LOOP_REAL_ROUTE"] != nil))
+    func realRouteMatchesDoppler() throws {
+        let url = URL(fileURLWithPath: ProcessInfo.processInfo.environment["LOOP_REAL_ROUTE"]!)
+        let pts = try JSONDecoder().decode([RoutePoint].self, from: Data(contentsOf: url))
+        var f = DistanceFilter(kind: .walk, start: pts[0].t)
+        var total = 0.0, doppler = 0.0
+        for (i, p) in pts.enumerated() {
+            if case .accept(let inc) = f.fix(LocationFix(lat: p.lat, lon: p.lon, altitude: p.alt, speed: p.speed,
+                                                          hAcc: p.hAcc, timestamp: p.t, isStationary: nil)) { total += inc }
+            if i > 0, p.speed >= 0 { doppler += p.speed * min(5, p.t.timeIntervalSince(pts[i - 1].t)) }
+        }
+        print("real route total", total, "doppler", doppler)
+        #expect(abs(total - doppler) <= 0.05 * doppler)
+    }
 }
