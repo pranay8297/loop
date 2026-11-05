@@ -525,6 +525,15 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 .phases>li.done .ph-n span{color:var(--accent)}
 .phases>li.next{border-top:2px solid var(--accent)}
 .phases>li.next .ph-n span{color:var(--accent)}
+
+/* world map explainer */
+.mapsteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2.4vw,28px);margin-top:30px}
+@media (max-width:760px){.mapsteps{grid-template-columns:1fr}}
+.mapsteps figure{margin:0;display:grid;gap:12px;align-content:start}
+.mapsteps .mp{aspect-ratio:4/3;border-radius:12px;background:#121212;overflow:hidden}
+.mapsteps .mp svg{width:100%;height:100%;display:block}
+.mapsteps figcaption b{display:block;font-weight:600;font-size:15px}
+.mapsteps figcaption span{display:block;color:var(--fg2);font-size:14px;line-height:1.5;margin-top:2px}
 </style>
 
 <header class="wrap topbar">
@@ -754,8 +763,25 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
     <div><b>Cheers and nudges</b><span>One tap. A quiet friend gets a nudge, not a ranking.</span></div>
     <div><b>Never shown</b><span>Distances, paces, times, routes, places and any kind of ranking.</span></div>
   </div>
-  <h3 class="sub3">The live map</h3>
-  <p class="lead" style="margin-top:10px">Open Loop and the first thing you see is a live map of people moving: a glow wherever people are out walking, running or riding right now. It is built from anonymous counts for areas a few kilometres wide, and an area only lights up once at least five people are in it, so no one can be picked out.</p>
+</section>
+
+<section class="wrap sec" aria-labelledby="mapH">
+  <h2 id="mapH">One map of the world moving</h2>
+  <p class="lead">Open Loop and the first thing you see is a map of where people move: seafronts, parks and streets glowing wherever people walk, run and ride, across the whole world. It is built from the workouts people already record, so it needs no extra permission and almost no battery.</p>
+  <div class="mapsteps" id="mapsteps"></div>
+  <h3 class="sub3">Two layers</h3>
+  <div class="online">
+    <div><b>Where people move</b><span>Every finished workout adds its cells, for everyone who records. This is the main map, and it fills up fast.</span></div>
+    <div><b>Moving right now</b><span>From the few who allow location "Always", around 5 to 6% of people. Counts for areas a few kilometres wide, from low-power wakes, never GPS. Shown as soft pulses on top.</span></div>
+  </div>
+  <h3 class="sub3">How nobody can be picked out</h3>
+  <div class="online">
+    <div><b>Five people minimum</b><span>A cell only lights up once at least five different people have passed through it in the last month. One person's daily loop never draws a line.</span></div>
+    <div><b>Counted once</b><span>Each phone counts a cell at most once a day. Different people are told apart by a tag that is different for every cell and changes each week, so cells can't be stitched back into anyone's route.</span></div>
+    <div><b>Thrown away on arrival</b><span>The server adds one to each cell and discards the upload. No ID, no IP address, no time beyond the day, no distance or pace.</span></div>
+    <div><b>Quiet places blur</b><span>Where few people move, the map shows bigger, softer areas instead of streets.</span></div>
+    <div><b>Your switch</b><span>"Add my workouts to the map", asked once. Off means nothing is sent.</span></div>
+  </div>
 </section>
 
 <section class="wrap sec" aria-labelledby="smartH">
@@ -808,7 +834,8 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
     <div><b>A normal day</b><span>Under 1% is the target. Motion history and low-power location wakes only. No GPS, no network.</span></div>
     <div><b>During a workout</b><span>GPS once a second, paused by itself when you stand still. Nothing is drawn while the phone is locked.</span></div>
     <div><b>Network</b><span>One small upload when a workout ends. The live map loads only while Loop is open. Nudges arrive as notifications, never by checking in the background.</span></div>
-    <div><b>Measured</b><span>Apple's MetricKit reports Loop's own battery use every day. We check it after every build.</span></div>
+    <div><b>Paused workouts</b><span>GPS turns off after a few minutes of pause and comes back on when you resume.</span></div>
+    <div><b>Measured</b><span>First real number: iOS put Loop at 1% of the battery for all of 5 Nov, a day with two walks recorded, screen off. From the next build Apple's MetricKit reports Loop's use every day.</span></div>
   </div>
 </section>
 
@@ -821,7 +848,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
       <li><b>A made-up handle</b> like "Kite 41".</li>
       <li><b>Which circles you are in.</b></li>
       <li><b>Days you showed up.</b> A yes for a day, nothing more.</li>
-      <li><b>Live map counts</b> per area of a few kilometres, with no ID attached.</li>
+      <li><b>Map counts.</b> A number per cell about 150 m wide, from finished workouts, plus "moving now" counts for areas a few kilometres wide. No ID attached.</li>
       <li><b>A notification token</b> so a nudge can reach your phone.</li>
     </ul></div>
     <div><h3>Never leaves your phone</h3><ul>
@@ -906,11 +933,12 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
     </li>
     <li>
       <div class="ph-n"><b>05</b><span class="mono">Then</span></div>
-      <h3>The live map</h3>
+      <h3>The world map</h3>
       <ul>
-        <li>Anonymous counts per area, five people minimum</li>
-        <li>The home screen's background</li>
-        <li>Loads only while Loop is open</li>
+        <li>Finished workouts add cells about 150 m wide, ends left off</li>
+        <li>Five people minimum, counted once a day, tags per cell</li>
+        <li>"Moving now" pulses from people who allow Always</li>
+        <li>The home screen's background, loaded only while open</li>
       </ul>
       <p class="tech mono">H3 cells · Postgres · MapKit</p>
     </li>
@@ -927,7 +955,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
   </ol>
   <h3 class="sub3">Your calls</h3>
   <div class="needs">
-    <div class="need"><span class="st mono">Your call</span><div><b>Location "Always"</b><p>Needed for GPS to start on its own. Without it Loop still logs every walk, run and ride from the motion chip, just without the route.</p></div></div>
+    <div class="need"><span class="st mono">Your call</span><div><b>Location "Always"</b><p>Optional, and expect only 5 to 6% of people to allow it. It lets GPS start on its own and adds the "moving now" layer. Without it Loop still logs every walk, run and ride, and the world map still fills from recorded workouts.</p></div></div>
     <div class="need"><span class="st mono">Your call</span><div><b>Contacts</b><p>Recommended: invite links, so contacts never leave the phone. The other option finds contacts already on Loop, but sends scrambled phone numbers to the server.</p></div></div>
     <div class="need"><span class="st ok mono">Ready</span><div><b>Railway</b><p>You already use it. One small TypeScript service and a Postgres database in one region near most users. Our code never logs IP addresses. Needs a one-time railway login on this Mac.</p></div></div>
     <div class="need"><span class="st ok mono">Ready</span><div><b>Apple Developer Program</b><p>Signing, HealthKit and TestFlight for friends.</p></div></div>
@@ -1154,6 +1182,44 @@ function cardCity2(c){var dk=c.tone==="dk",col=dk?PAPER:INK;
   '<div class="c-bot"><div class="c-big">'+c.km+'<small>km</small></div><div class="c-row"><span><i>Time</i>'+c.time+'</span><span><i>Pace</i>'+c.pace+' /km</span></div></div></div>'}
 function renderCities(){$("#citygrid").innerHTML=CITIES.map(function(c){return '<figure>'+cardCity2(c)+'<figcaption><b>'+c.name+'</b><span>'+c.land+'</span></figcaption></figure>'}).join("")}
 
+/* world map explainer: one route, its cells, many people added up */
+function mapSteps(){
+  var W=160,H=120,ACC=ACC_D;
+  function hexOf(x,y,S){var q=(Math.sqrt(3)/3*x-y/3)/S,r=(2/3*y)/S,xx=q,zz=r,yy=-xx-zz,rx=Math.round(xx),ry=Math.round(yy),rz=Math.round(zz),dx=Math.abs(rx-xx),dy=Math.abs(ry-yy),dz=Math.abs(rz-zz);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy>dz)ry=-rx-rz;else rz=-rx-ry;return rx+","+rz}
+  function hexPath(k,S,shrink){var a=k.split(",").map(Number),cx=S*Math.sqrt(3)*(a[0]+a[1]/2),cy=S*1.5*a[1],d="",s=S*(shrink||.92);for(var i=0;i<6;i++){var t=Math.PI/180*(60*i-30);d+=(i?"L":"M")+(cx+s*Math.cos(t)).toFixed(2)+" "+(cy+s*Math.sin(t)).toFixed(2)}return d+"Z"}
+  function line(p){return p.map(function(q,i){return (i?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1)}).join("")}
+  function dense(p,step){var o=[p[0]];for(var i=1;i<p.length;i++){var a=p[i-1],b=p[i],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));for(var j=1;j<=n;j++)o.push([a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n])}return o}
+  // shared places people use: a seafront, an avenue, a park loop
+  var sea=[],park=[],i;for(i=0;i<=40;i++){var x=i*4;sea.push([x,30+7*Math.sin(x/24)])}
+  for(i=0;i<=48;i++){var t=i/48*Math.PI*2;park.push([112+17*Math.cos(t),80+12*Math.sin(t)])}
+  var ave=[[22,116],[48,72],[70,36]];
+  function seaPart(a,b){return sea.filter(function(q){return q[0]>=a&&q[0]<=b})}
+  var me=dense(ave.concat(seaPart(72,124)),1);
+  var cut=14,vis=me.slice(cut,me.length-cut);
+  var streets='<path d="M-5 8 L165 -6 M-5 60 L165 46 M-5 100 L165 86 M30 -5 L10 125 M95 -5 L80 125 M140 -5 L128 125" stroke="#1E1E1E" stroke-width="1.6" fill="none"/>'+
+    '<path d="'+line(sea)+'L160 0L0 0Z" fill="#171717"/>';
+  function svg(inner){return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+streets+inner+'</svg>'}
+  // 1: your workout, ends faded
+  var p1=svg('<path d="'+line(me)+'" stroke="'+PAPER+'" stroke-opacity=".22" stroke-width="1.6" fill="none" stroke-dasharray="1.5 2.5" stroke-linecap="round"/><path d="'+line(vis)+'" stroke="'+PAPER+'" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
+  // 2: the cells it passed through
+  var S=4.2,cells={};vis.forEach(function(q){cells[hexOf(q[0],q[1],S)]=1});
+  var p2=svg(Object.keys(cells).map(function(k){return '<path d="'+hexPath(k,S)+'" fill="'+ACC+'" fill-opacity=".28" stroke="'+PAPER+'" stroke-opacity=".75" stroke-width=".45"/>'}).join(""));
+  // 3: thirty people added up, five minimum
+  var r=rng(77),count={},people=[];
+  for(i=0;i<30;i++){var pick=r(),route;
+    if(pick<.45){var a=r()*70,b=a+40+r()*50;route=seaPart(a,b)}
+    else if(pick<.75){route=park.slice()}
+    else{route=ave.concat(seaPart(72,72+r()*60))}
+    route=dense(route,1).map(function(q){return[q[0]+(r()-.5)*1.6,q[1]+(r()-.5)*1.6]});people.push(route)}
+  people.forEach(function(route){var seen={};route.forEach(function(q){seen[hexOf(q[0],q[1],S)]=1});Object.keys(seen).forEach(function(k){count[k]=(count[k]||0)+1})});
+  var lone=dense((function(){var o=[];for(var j=0;j<=24;j++){var t=j/24*Math.PI*2;o.push([64+9*Math.cos(t),99+6*Math.sin(t)])}return o})(),1);
+  var glow=Object.keys(count).filter(function(k){return count[k]>=5}).map(function(k){var v=Math.min(1,count[k]/14);return '<path d="'+hexPath(k,S,1.02)+'" fill="'+ACC+'" fill-opacity="'+(.18+.72*v).toFixed(2)+'"/>'}).join("");
+  var p3=svg(glow+'<path d="'+line(lone)+'" stroke="'+PAPER+'" stroke-opacity=".35" stroke-width=".8" fill="none" stroke-dasharray="1.2 2"/><text x="64" y="115" text-anchor="middle" font-size="5" fill="'+PAPER+'" fill-opacity=".55" style="font-family:var(--f-sans);letter-spacing:.06em">1 PERSON · HIDDEN</text>');
+  var items=[[p1,"Your workout","The route stays on your phone. The first and last 500 m, and anything near your usual places, are left out."],
+    [p2,"Sent as cells","Only the cells about 150 m wide that it passed through. No ID, no route line, no distance or pace."],
+    [p3,"Added up","A cell glows once five different people have passed through it. Someone moving alone never shows."]];
+  $("#mapsteps").innerHTML=items.map(function(it){return '<figure><div class="mp">'+it[0]+'</div><figcaption><b>'+it[1]+'</b><span>'+it[2]+'</span></figcaption></figure>'}).join("")}
+
 /* gallery */
 function renderGallery(){var hide=$("#gHide").checked;
   var items=[["Line","Solid where you ran, dotted where you walked. The blue dot is where you stopped.",cardLine({hide:hide})],["Photo","Your route over a photo you took, in black and white.",cardPhoto({hide:hide})],["Bib","No race needed. 5.24 is the number.",cardBib()],["Receipt","Every split, itemised. Fastest kilometre in blue.",cardReceipt()],["Lanes","Needs an Apple Watch. A pool swim, length by length.",cardLanes()],["25 days in","Runs are dots, swims are rings, gym days are squares.",cardMonth()]];
@@ -1325,6 +1391,6 @@ $("#photoReset").addEventListener("click",function(){if(state.photo)URL.revokeOb
 $("#topIcon").innerHTML=iconSVG();$("#lockIcon").innerHTML=iconSVG();$("#markDark").innerHTML=iconSVG({bg:false,tone:"dark"});$("#markLight").innerHTML=iconSVG({bg:false,tone:"light"});
 $("#nLoop").innerHTML=iconSVG();$("#nRan").innerHTML=ranSVG();$("#nGlow").innerHTML=glowSVG();
 
-renderGallery();renderSmart();renderCities();$("#heat").innerHTML=heatSVG();go("home");
+renderGallery();renderSmart();renderCities();mapSteps();$("#heat").innerHTML=heatSVG();go("home");
 })();
 </script>
