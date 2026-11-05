@@ -1,6 +1,14 @@
-# Loop
+<p align="center">
+  <img src="design/logo.svg" width="112" height="112" alt="Loop logo">
+</p>
 
-A private, minimal workout tracker for iPhone. Tap start, hold to stop, and the workout is saved and named for you. No forms, no account, no server, no subscription.
+<h1 align="center">Loop</h1>
+
+<p align="center"><b>Tap start. Stop. It's saved.</b><br>
+A private, minimal workout tracker for iPhone. Hold to stop and the workout is saved and named for you.<br>
+No forms, no account, no server, no subscription.</p>
+
+---
 
 - Runs, walks and rides with just an iPhone, including run-walk-run (walk breaks are detected and drawn as dots)
 - Checks what your devices can measure before you start; if it can't track an activity (a swim without an Apple Watch, say), it tells you and offers a check-in
