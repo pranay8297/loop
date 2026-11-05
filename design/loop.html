@@ -906,24 +906,26 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
       </ul>
       <p class="tech mono">SwiftUI · Core Location · Core Motion · HealthKit · MapKit</p>
     </li>
-    <li class="next">
-      <div class="ph-n"><b>02</b><span class="mono">Next</span></div>
+    <li class="done">
+      <div class="ph-n"><b>02</b><span class="mono">Done</span></div>
       <h3>A card for every city</h3>
       <ul>
-        <li>About 40 cities: landmark in one line, name in its own script</li>
+        <li>40 cities: landmark in one line, name in its own script</li>
         <li>Picked from where you ran, map card everywhere else</li>
-        <li>Drawn as vectors, so cards stay sharp and small</li>
+        <li>Dark or light, drawn as vectors so cards stay sharp</li>
       </ul>
       <p class="tech mono">SwiftUI Canvas · SVG paths</p>
     </li>
-    <li>
-      <div class="ph-n"><b>03</b><span class="mono">Then</span></div>
+    <li class="next">
+      <div class="ph-n"><b>03</b><span class="mono">Now</span></div>
       <h3>Starts by itself</h3>
       <ul>
-        <li>Walks, runs and rides from the motion chip's record</li>
+        <li>On your phone: walks, runs and rides from the motion chip's record</li>
+        <li>On your phone: the clock stops when you stand still</li>
+        <li>On your phone: GPS off after 3 minutes of pause</li>
+        <li>On your phone: daily battery numbers and a GPS log</li>
         <li>GPS on its own for runs and rides</li>
         <li>Apple Watch workouts from Apple Health</li>
-        <li>Daily battery numbers from MetricKit</li>
       </ul>
       <p class="tech mono">CMMotionActivity · CMPedometer · CLMonitor · HealthKit background delivery · MetricKit</p>
     </li>
@@ -931,7 +933,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
       <div class="ph-n"><b>04</b><span class="mono">Then</span></div>
       <h3>Circles and the server</h3>
       <ul>
-        <li>Random IDs, invite links, no sign-up</li>
+        <li>Server live: random IDs, invite links, no sign-up</li>
         <li>Friends, nearby and same-hour circles, formed by the app</li>
         <li>Showed-up dots, the shared week, cheers and nudges</li>
         <li>A check on every field: is this personal data?</li>
@@ -964,7 +966,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
   <div class="needs">
     <div class="need"><span class="st mono">Your call</span><div><b>Location "Always"</b><p>Optional, and expect only 5 to 6% of people to allow it. It lets GPS start on its own and adds the "moving now" layer. Without it Loop still logs every walk, run and ride, and the world map still fills from recorded workouts.</p></div></div>
     <div class="need"><span class="st mono">Your call</span><div><b>Contacts</b><p>Recommended: invite links, so contacts never leave the phone. The other option finds contacts already on Loop, but sends scrambled phone numbers to the server.</p></div></div>
-    <div class="need"><span class="st ok mono">Ready</span><div><b>Railway</b><p>You already use it. One small TypeScript service and a Postgres database in one region near most users. Our code never logs IP addresses. Needs a one-time railway login on this Mac.</p></div></div>
+    <div class="need"><span class="st ok mono">Live</span><div><b>Railway</b><p>One small TypeScript service and a Postgres database in Singapore, running now. Our code never logs IP addresses. Old projects cleaned up.</p></div></div>
     <div class="need"><span class="st ok mono">Ready</span><div><b>Apple Developer Program</b><p>Signing, HealthKit and TestFlight for friends.</p></div></div>
   </div>
 </section>
