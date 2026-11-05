@@ -51,7 +51,7 @@ extension MotionSource {
 }
 
 /// Virtual clock so replays at N times speed still produce real-looking times.
-final class RecordingClock: @unchecked Sendable {
+class RecordingClock: @unchecked Sendable {
     let origin: Date
     let scale: Double
     /// `origin` lets a restored replay continue at or after the time it was saved.

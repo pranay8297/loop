@@ -79,8 +79,8 @@ struct RecordingDraftTests {
 
     @Test func resumeExcludesGapAndKeepsRoute() {
         let now = Date()
-        var d = sampleDraft(points: 100, savedAt: now.addingTimeInterval(-300))
-        d.startDate = now.addingTimeInterval(-900)
+        // Moving from the start (a point every second) to the save, 900 s before now.
+        var d = sampleDraft(points: 600, savedAt: now.addingTimeInterval(-300))
         d.pausedTotal = 0
         let src = SilentSource()
         let r = WorkoutRecorder.restore(d, location: src, motion: src, clock: RecordingClock(),
@@ -107,8 +107,7 @@ struct RecordingDraftTests {
 
     @Test func restorePausedStartsPauseAtSave() {
         let now = Date()
-        var d = sampleDraft(points: 20, savedAt: now.addingTimeInterval(-600))
-        d.startDate = now.addingTimeInterval(-1200)
+        var d = sampleDraft(points: 600, savedAt: now.addingTimeInterval(-600))
         d.pausedTotal = 0
         let src = SilentSource()
         let r = WorkoutRecorder.restore(d, location: src, motion: src, clock: RecordingClock(), paused: true, gap: 600)

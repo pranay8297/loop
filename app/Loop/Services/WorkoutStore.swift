@@ -101,4 +101,34 @@ enum WorkoutStore {
         }
         return w
     }
+
+    /// One-time fix: recorded workouts saved before moving time ignored standing still.
+    /// Lowers `movingSeconds` only when the route says at least `minDrop` less. Returns how many changed.
+    static let movingTimeFixKey = "movingTimeV2Done"
+    static let movingTimeMinDrop: Double = 60
+
+    @discardableResult
+    static func correctMovingTimeOnce(_ ctx: ModelContext, defaults: UserDefaults = .standard) -> Int {
+        guard !defaults.bool(forKey: movingTimeFixKey) else { return 0 }
+        let all = (try? ctx.fetch(FetchDescriptor<Workout>(predicate: #Predicate { $0.source == "recorded" }))) ?? []
+        var changed = 0
+        for w in all where !w.isCheckIn {
+            guard let fixed = correctedMovingSeconds(w) else { continue }
+            w.movingSeconds = fixed
+            changed += 1
+        }
+        if changed > 0 { try? ctx.save() }
+        defaults.set(true, forKey: movingTimeFixKey)
+        print("Loop: moving time corrected on \(changed) of \(all.count) recorded workouts")
+        return changed
+    }
+
+    /// The lower moving time a stored workout should have, or nil to leave it alone.
+    static func correctedMovingSeconds(_ w: Workout) -> Double? {
+        guard w.source == "recorded", !w.isCheckIn else { return nil }
+        let route = w.route
+        guard route.count >= 2 else { return nil }
+        let new = max(0, MovingTime.seconds(start: w.startDate, end: w.endDate, route: route))
+        return w.movingSeconds - new >= movingTimeMinDrop ? new : nil
+    }
 }

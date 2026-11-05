@@ -31,6 +31,7 @@ struct RecordingView: View {
 
     private var modeText: String {
         if recorder.state == .paused { return "Paused" }
+        if recorder.isStill { return "Standing still" }
         if recorder.kind == .ride { return "Riding" }
         return recorder.mode == .run && recorder.kind == .run ? "Running" : "Walking"
     }

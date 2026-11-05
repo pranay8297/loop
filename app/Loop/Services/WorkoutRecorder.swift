@@ -32,6 +32,8 @@ final class WorkoutRecorder {
     private(set) var liveModes: [MoveKind] = []
     /// When the app was closed, for a recording restored in the paused state. Cleared on resume.
     private(set) var closedAt: Date?
+    /// Recording, not paused, and nothing has moved for longer than `MovingTime.grace`: the clock is frozen.
+    private(set) var isStill = false
 
     /// Where drafts go. Nil disables drafts (tests, fresh-store UI tests).
     @ObservationIgnored var draftStore: RecordingDraftStore?
@@ -51,6 +53,7 @@ final class WorkoutRecorder {
     @ObservationIgnored private var startDate: Date = .distantPast
     @ObservationIgnored private var pausedTotal: Double = 0
     @ObservationIgnored private var pauseStarted: Date?
+    @ObservationIgnored private var moving = MovingTime()
 
     init(location: LocationSource, motion: MotionSource, clock: RecordingClock = RecordingClock()) {
         self.location = location
@@ -63,6 +66,8 @@ final class WorkoutRecorder {
         self.kind = kind
         startDate = clock.now()
         filter = DistanceFilter(kind: kind, start: startDate)
+        moving = MovingTime()
+        moving.begin(startDate)
         state = .recording
         startSources(reason: "recording start")
         persistDraft()
@@ -116,7 +121,7 @@ final class WorkoutRecorder {
         guard pedometerTask == nil else { return }
         let steps = motion.pedometer(from: startDate)
         pedometerTask = Task { [weak self] in
-            for await p in steps { self?.pedo.append(p); self?.filter.pedometer(p) }
+            for await p in steps { self?.ingestPedometer(p) }
         }
     }
 
@@ -143,6 +148,7 @@ final class WorkoutRecorder {
         guard state == .recording else { return }
         state = .paused
         pauseStarted = clock.now()
+        moving.pause(pauseStarted!)
         filter.pause()
         publish()
         persistDraft()
@@ -152,6 +158,7 @@ final class WorkoutRecorder {
         guard state == .paused else { return }
         if let p = pauseStarted { pausedTotal += clock.now().timeIntervalSince(p) }
         pauseStarted = nil
+        moving.begin(clock.now())
         resumePending = true
         filter.resume()
         state = .recording
@@ -171,13 +178,14 @@ final class WorkoutRecorder {
             pauseStarted = nil
             closedAt = nil
         }
+        moving.pause(end)
         state = .finished
         for t in [locationTask, activityTask, pedometerTask, tickTask] { t?.cancel() }
         locationTask = nil; activityTask = nil; pedometerTask = nil; tickTask = nil
         if gpsOn { gpsOn = false; powerLog?.log(.gpsOff, reason: "finish") }
         location.stop(); motion.stop()
         publish()
-        return Self.buildResult(kind: kind, start: startDate, end: end, movingSeconds: movingTime(at: end),
+        return Self.buildResult(kind: kind, start: startDate, end: end, movingSeconds: min(moving.total, movingTime(at: end)),
                                 cum: cum, points: points, motionSamples: motionSamples, pedo: pedo)
     }
 
@@ -222,6 +230,9 @@ final class WorkoutRecorder {
         if let m = d.modes.last { r.mode = m } else { r.mode = d.kind == .walk ? .walk : .run }
         r.filter = DistanceFilter(kind: d.kind, start: d.startDate)
         for p in d.pedo { r.filter.pedometer(p) }
+        // Moving time up to the save; the time the app was closed adds nothing.
+        r.moving = MovingTime.replay(start: d.startDate, end: d.savedAt, points: d.points, pedo: d.pedo,
+                                     usesSteps: d.kind != .ride, pauseStarted: d.pauseStarted)
         if paused {
             r.state = .paused
             r.pauseStarted = d.pauseStarted ?? d.savedAt
@@ -233,6 +244,7 @@ final class WorkoutRecorder {
             r.pausedTotal += max(0, gap)
             r.state = .recording
             r.filter.resume()
+            r.moving.begin(clock.now())
             r.resumePending = true
         }
         if paused {
@@ -250,7 +262,9 @@ final class WorkoutRecorder {
     static func result(from d: RecordingDraft) -> RecordingResult {
         var paused = d.pausedTotal
         if let p = d.pauseStarted { paused += max(0, d.savedAt.timeIntervalSince(p)) }
-        let moving = max(0, d.savedAt.timeIntervalSince(d.startDate) - paused)
+        let wall = max(0, d.savedAt.timeIntervalSince(d.startDate) - paused)
+        let moving = min(wall, MovingTime.replay(start: d.startDate, end: d.savedAt, points: d.points, pedo: d.pedo,
+                                                 usesSteps: d.kind != .ride, pauseStarted: d.pauseStarted).total)
         return buildResult(kind: d.kind, start: d.startDate, end: d.savedAt, movingSeconds: moving, cum: d.cum,
                            points: d.points, motionSamples: d.motionSamples, pedo: d.pedo)
     }
@@ -281,7 +295,13 @@ final class WorkoutRecorder {
 
     func ingest(_ fix: LocationFix) {
         guard state == .recording || state == .paused else { return }
-        guard case .accept(let increment) = filter.fix(fix) else { return }
+        let decision = filter.fix(fix)
+        if state == .recording {
+            var moved = MovingTime.isDopplerMoving(speed: fix.speed, hAcc: fix.hAcc)
+            if case .accept(let inc) = decision, inc > 0, !resumePending { moved = true }
+            if moved { moving.evidence(fix.timestamp) }
+        }
+        guard case .accept(let increment) = decision else { return }
         var p = RoutePoint(lat: fix.lat, lon: fix.lon, alt: fix.altitude, t: fix.timestamp,
                            speed: fix.speed >= 0 ? fix.speed : -1, hAcc: fix.hAcc, cumMeters: cum, paused: nil)
         if state == .paused {
@@ -327,9 +347,24 @@ final class WorkoutRecorder {
         return out
     }
 
+    func ingestPedometer(_ p: PedometerSample) {
+        if state == .recording, kind != .ride, let last = pedo.last, p.steps > last.steps {
+            moving.evidence(p.time)
+        }
+        pedo.append(p)
+        filter.pedometer(p)
+    }
+
+    /// Publishes now, as the 1 s tick does. For tests with a hand-moved clock.
+    func tickForTests() { publish() }
+
     private func publish() {
         let now = clock.now()
-        movingSeconds = movingTime(at: now)
+        let m = min(moving.value(at: now), movingTime(at: now))
+        // Live time never goes backwards.
+        movingSeconds = state == .idle ? m : max(movingSeconds, m)
+        let still = state == .recording && moving.isStill(at: now)
+        if still != isStill { isStill = still }
         distanceMeters = cum
         cadence = state == .recording ? pedo.last?.cadence : nil
         // pace over the last ~30 s of moving points

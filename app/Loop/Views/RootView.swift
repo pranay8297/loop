@@ -82,7 +82,10 @@ struct RootView: View {
             }
             .preferredColorScheme(.dark)
         }
-        .task { await MotionHistory.shared.scanIfDue(ctx) }
+        .task {
+            WorkoutStore.correctMovingTimeOnce(ctx)
+            await MotionHistory.shared.scanIfDue(ctx)
+        }
         .onChange(of: phase) { _, p in
             if p == .active {
                 env.refresh()
