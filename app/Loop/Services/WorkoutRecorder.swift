@@ -19,8 +19,6 @@ struct RecordingResult {
 @MainActor
 @Observable
 final class WorkoutRecorder {
-    static let maxAccuracy: Double = 25
-    static let maxSpeed: Double = 12
 
     private(set) var state: RecorderState = .idle
     private(set) var kind: ActivityKind = .run
@@ -42,6 +40,7 @@ final class WorkoutRecorder {
     @ObservationIgnored private var motionSamples: [MotionSample] = []
     @ObservationIgnored private var pedo: [PedometerSample] = []
     @ObservationIgnored private var cum: Double = 0
+    @ObservationIgnored private var filter = DistanceFilter(kind: .run, start: .distantPast)
     @ObservationIgnored private var lastAccepted: RoutePoint?
     @ObservationIgnored private var resumePending = false
     @ObservationIgnored private var startDate: Date = .distantPast
@@ -58,6 +57,7 @@ final class WorkoutRecorder {
         guard state == .idle else { return }
         self.kind = kind
         startDate = clock.now()
+        filter = DistanceFilter(kind: kind, start: startDate)
         state = .recording
         let loc = location.fixes()
         tasks.append(Task { [weak self] in
@@ -69,7 +69,7 @@ final class WorkoutRecorder {
         })
         let steps = motion.pedometer(from: startDate)
         tasks.append(Task { [weak self] in
-            for await p in steps { self?.pedo.append(p) }
+            for await p in steps { self?.pedo.append(p); self?.filter.pedometer(p) }
         })
         tasks.append(Task { [weak self] in
             while !Task.isCancelled {
@@ -83,6 +83,7 @@ final class WorkoutRecorder {
         guard state == .recording else { return }
         state = .paused
         pauseStarted = clock.now()
+        filter.pause()
         publish()
     }
 
@@ -91,6 +92,7 @@ final class WorkoutRecorder {
         if let p = pauseStarted { pausedTotal += clock.now().timeIntervalSince(p) }
         pauseStarted = nil
         resumePending = true
+        filter.resume()
         state = .recording
         publish()
     }
@@ -126,7 +128,7 @@ final class WorkoutRecorder {
 
     func ingest(_ fix: LocationFix) {
         guard state == .recording || state == .paused else { return }
-        guard fix.hAcc >= 0, fix.hAcc <= Self.maxAccuracy else { return }
+        guard case .accept(let increment) = filter.fix(fix) else { return }
         var p = RoutePoint(lat: fix.lat, lon: fix.lon, alt: fix.altitude, t: fix.timestamp,
                            speed: fix.speed >= 0 ? fix.speed : -1, hAcc: fix.hAcc, cumMeters: cum, paused: nil)
         if state == .paused {
@@ -136,16 +138,12 @@ final class WorkoutRecorder {
             resumePending = true
             return
         }
-        if let last = lastAccepted, !resumePending {
-            let d = RouteGeometry.distance(last, p)
-            let dt = p.t.timeIntervalSince(last.t)
-            if dt <= 0 { return }
-            if d / dt > Self.maxSpeed { return }
-            cum += d
-            p.cumMeters = cum
-        } else if resumePending {
+        if resumePending {
             p.paused = true
             resumePending = false
+        } else {
+            cum += increment
+            p.cumMeters = cum
         }
         lastAccepted = p
         points.append(p)

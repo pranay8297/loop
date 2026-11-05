@@ -29,6 +29,8 @@ struct PedometerSample: Sendable {
     var steps: Int
     /// steps per minute
     var cadence: Double?
+    /// cumulative meters since start, from the pedometer (nil when unavailable)
+    var distance: Double? = nil
 }
 
 protocol LocationSource: AnyObject {
@@ -112,7 +114,8 @@ final class LiveMotionSource: MotionSource {
             pedometerManager.startUpdates(from: start) { data, _ in
                 guard let data else { return }
                 let cadence = data.currentCadence.map { $0.doubleValue * 60 }
-                continuation.yield(PedometerSample(time: data.endDate, steps: data.numberOfSteps.intValue, cadence: cadence))
+                continuation.yield(PedometerSample(time: data.endDate, steps: data.numberOfSteps.intValue, cadence: cadence,
+                                                   distance: data.distance?.doubleValue))
             }
         }
     }
@@ -187,7 +190,7 @@ final class ReplayFeed: LocationSource, MotionSource {
             tasks.append(play({ p, due in
                 let cadence = p.speed >= 2.2 ? 166.0 : 112.0
                 steps += cadence / 60 * (p.t - lastT); lastT = p.t
-                if Int(p.t) % 3 == 0 { c.yield(PedometerSample(time: due, steps: Int(steps), cadence: cadence)) }
+                if Int(p.t) % 3 == 0 { c.yield(PedometerSample(time: due, steps: Int(steps), cadence: cadence, distance: nil)) }
             }, finish: { c.finish() }))
         }
     }
