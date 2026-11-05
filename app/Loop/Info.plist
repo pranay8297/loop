@@ -20,6 +20,10 @@
 	<string>0.1</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>instagram-stories</string>
+	</array>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Loop saves your workouts and routes to Apple Health.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -28,6 +32,8 @@
 	<string>Loop uses your location to map your route and measure distance and pace while you record a workout.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Loop uses motion and step data to tell walking from running and to count your steps.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Loop saves your share cards to Photos.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		090098BCC9D06B73E26F063E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3985145F42A0F2DC204A5242 /* Assets.xcassets */; };
+		0A6980D884A362B92F472EC7 /* RouteDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B599CC7313830D0E9D65648 /* RouteDrawing.swift */; };
 		0E72E1CA068BA94208E7C534 /* Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E25D7AC6BA29A37FDC7030C /* Stats.swift */; };
 		106EBDA3A074C7578ABB396A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96800E6F035DB56EACB3D10D /* Components.swift */; };
 		362E8D34FD5A6F3D945124D5 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752E3E40AD90F15A0E74468D /* CheckInView.swift */; };
@@ -14,6 +16,8 @@
 		4407E584715385AFDE64D818 /* CapabilityChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90AF4904AF789D3637A6655D /* CapabilityChecker.swift */; };
 		5E8490FD3CD05461F8C1E3B9 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D832AF4DE5482CA1E9893212 /* RootView.swift */; };
 		604A4B7CA2B5936CA2761D27 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D1B4ECB9119C5B16D57F3B /* SummaryView.swift */; };
+		66EA6679A095D5147678E08A /* CardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 215C8E8F1155B82563A568B4 /* CardRenderer.swift */; };
+		73985613F950354C101438A2 /* ShareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CE2A74A5A7178DCFAAA09E /* ShareScreen.swift */; };
 		798261209443B8337CA307DD /* PlaceResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D4593136A766A1C4085A1D /* PlaceResolver.swift */; };
 		7A6A7B9BCD8CDA758581528F /* LoopUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA657A304798A996D878BAF8 /* LoopUITests.swift */; };
 		7BB780240DB8D7902A3B87CF /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EC1914F83A2A3B070F73E6 /* Theme.swift */; };
@@ -22,8 +26,10 @@
 		852C8D72C25B5520A668E866 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6155D06C8DB9B894D4A76F0D /* Workout.swift */; };
 		9CEACC1BEDA010251137C2EE /* ActivityKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C25AFF02947C8D2D9CF4E0C /* ActivityKind.swift */; };
 		A3B1F51F8591A9EF58881746 /* WorkoutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 604462E080AD9655D55122D2 /* WorkoutRecorder.swift */; };
+		A7BE1A0D78E8245504452613 /* CardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65D618740633A798AA08957 /* CardTests.swift */; };
 		A83956BA5E78D7521C318D85 /* WorkoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289B2EDDE0E99FBC7200C1EC /* WorkoutStore.swift */; };
 		ABB1FEA21AD769E589A7309E /* LoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DECA660E738021067E7917DA /* LoopTests.swift */; };
+		B5C71BDFBB52460B795EF204 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84596FB0AC6E1215AFB62F3F /* Cards.swift */; };
 		D94EBE74A0CF242C06CB22F1 /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80474DC5042749E2F70512CE /* RecordingView.swift */; };
 		E229FCE3FE82F149CA2F26AE /* YouView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF248536F48321DC8E092A73 /* YouView.swift */; };
 		E426A7451F6A9F0EB2B06CCA /* HealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6074D1BC5DED9E08A7C7881A /* HealthService.swift */; };
@@ -32,6 +38,7 @@
 		FAB3FE169137FBFFE4C461A1 /* StartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5FB6E434831FD533DC76BD /* StartView.swift */; };
 		FAD7085645C1F9D36075C8C9 /* SolarCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB779E0681A3F91971A6D218 /* SolarCalculator.swift */; };
 		FF665E5909B70DD993B25CE6 /* ReplayRoute.json in Resources */ = {isa = PBXBuildFile; fileRef = 43A5C66C9C25719441D6005B /* ReplayRoute.json */; };
+		FFE7AF2232DBAC9EB8E6D01F /* MapSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B9A597BC869228AAA26450A /* MapSnapshot.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,10 +61,13 @@
 /* Begin PBXFileReference section */
 		11492803E3B4F265A1879F34 /* MotionSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionSegmenter.swift; sourceTree = "<group>"; };
 		14EC1914F83A2A3B070F73E6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		215C8E8F1155B82563A568B4 /* CardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardRenderer.swift; sourceTree = "<group>"; };
 		2728260204E225FA8CC53584 /* Sources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources.swift; sourceTree = "<group>"; };
 		289B2EDDE0E99FBC7200C1EC /* WorkoutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStore.swift; sourceTree = "<group>"; };
 		2FFB6BC2285A52F3E5FC33D0 /* Namer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Namer.swift; sourceTree = "<group>"; };
+		3985145F42A0F2DC204A5242 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		43A5C66C9C25719441D6005B /* ReplayRoute.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ReplayRoute.json; sourceTree = "<group>"; };
+		5B599CC7313830D0E9D65648 /* RouteDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDrawing.swift; sourceTree = "<group>"; };
 		604462E080AD9655D55122D2 /* WorkoutRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRecorder.swift; sourceTree = "<group>"; };
 		6074D1BC5DED9E08A7C7881A /* HealthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthService.swift; sourceTree = "<group>"; };
 		6155D06C8DB9B894D4A76F0D /* Workout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
@@ -67,9 +77,11 @@
 		7BAF7573CECCBA7A98F2CF5C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		80474DC5042749E2F70512CE /* RecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingView.swift; sourceTree = "<group>"; };
 		80D1B4ECB9119C5B16D57F3B /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
+		84596FB0AC6E1215AFB62F3F /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
 		90AF4904AF789D3637A6655D /* CapabilityChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityChecker.swift; sourceTree = "<group>"; };
 		96800E6F035DB56EACB3D10D /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9B3CAFB08F061AE8DAE655B0 /* LoopTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LoopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B9A597BC869228AAA26450A /* MapSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSnapshot.swift; sourceTree = "<group>"; };
 		9E25D7AC6BA29A37FDC7030C /* Stats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stats.swift; sourceTree = "<group>"; };
 		A874D95E8F1B82DF07C9F4B9 /* LoopUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LoopUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA5FB6E434831FD533DC76BD /* StartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartView.swift; sourceTree = "<group>"; };
@@ -80,8 +92,10 @@
 		D98E2E60A1593FB604B7BFB7 /* Loop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DECA660E738021067E7917DA /* LoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopTests.swift; sourceTree = "<group>"; };
 		E41F475B41E64C1D9823D275 /* DeviceEnvironmentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEnvironmentProvider.swift; sourceTree = "<group>"; };
+		E65D618740633A798AA08957 /* CardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTests.swift; sourceTree = "<group>"; };
 		EA51B44717B6C5DEFA5729B3 /* Loop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.entitlements; sourceTree = "<group>"; };
 		EF248536F48321DC8E092A73 /* YouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouView.swift; sourceTree = "<group>"; };
+		F5CE2A74A5A7178DCFAAA09E /* ShareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -106,8 +120,10 @@
 			isa = PBXGroup;
 			children = (
 				90AF4904AF789D3637A6655D /* CapabilityChecker.swift */,
+				215C8E8F1155B82563A568B4 /* CardRenderer.swift */,
 				E41F475B41E64C1D9823D275 /* DeviceEnvironmentProvider.swift */,
 				6074D1BC5DED9E08A7C7881A /* HealthService.swift */,
+				9B9A597BC869228AAA26450A /* MapSnapshot.swift */,
 				11492803E3B4F265A1879F34 /* MotionSegmenter.swift */,
 				2FFB6BC2285A52F3E5FC33D0 /* Namer.swift */,
 				78D4593136A766A1C4085A1D /* PlaceResolver.swift */,
@@ -136,6 +152,16 @@
 				171F06943E0F8B5C819DF02F /* LoopUITests */,
 				C7517B37BAC1B3A8F3989CF0 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		5F4AAA529748FF9825FA8364 /* Share */ = {
+			isa = PBXGroup;
+			children = (
+				84596FB0AC6E1215AFB62F3F /* Cards.swift */,
+				5B599CC7313830D0E9D65648 /* RouteDrawing.swift */,
+				F5CE2A74A5A7178DCFAAA09E /* ShareScreen.swift */,
+			);
+			path = Share;
 			sourceTree = "<group>";
 		};
 		83CF98271B6325DA4E50B4D4 /* App */ = {
@@ -174,6 +200,7 @@
 				AA5FB6E434831FD533DC76BD /* StartView.swift */,
 				80D1B4ECB9119C5B16D57F3B /* SummaryView.swift */,
 				EF248536F48321DC8E092A73 /* YouView.swift */,
+				5F4AAA529748FF9825FA8364 /* Share */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -181,6 +208,7 @@
 		DD47EF3A37E323491EAA7261 /* Loop */ = {
 			isa = PBXGroup;
 			children = (
+				3985145F42A0F2DC204A5242 /* Assets.xcassets */,
 				7BAF7573CECCBA7A98F2CF5C /* Info.plist */,
 				EA51B44717B6C5DEFA5729B3 /* Loop.entitlements */,
 				83CF98271B6325DA4E50B4D4 /* App */,
@@ -196,6 +224,7 @@
 		F5FFBE70740B095D485FDD98 /* LoopTests */ = {
 			isa = PBXGroup;
 			children = (
+				E65D618740633A798AA08957 /* CardTests.swift */,
 				DECA660E738021067E7917DA /* LoopTests.swift */,
 			);
 			path = LoopTests;
@@ -308,6 +337,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				090098BCC9D06B73E26F063E /* Assets.xcassets in Resources */,
 				FF665E5909B70DD993B25CE6 /* ReplayRoute.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -329,16 +359,21 @@
 			files = (
 				9CEACC1BEDA010251137C2EE /* ActivityKind.swift in Sources */,
 				4407E584715385AFDE64D818 /* CapabilityChecker.swift in Sources */,
+				66EA6679A095D5147678E08A /* CardRenderer.swift in Sources */,
+				B5C71BDFBB52460B795EF204 /* Cards.swift in Sources */,
 				362E8D34FD5A6F3D945124D5 /* CheckInView.swift in Sources */,
 				106EBDA3A074C7578ABB396A /* Components.swift in Sources */,
 				E4F6111A9DF0FD39B4E57CA8 /* DeviceEnvironmentProvider.swift in Sources */,
 				E426A7451F6A9F0EB2B06CCA /* HealthService.swift in Sources */,
 				7C64ACDF98F9E89C06B1E16F /* LoopApp.swift in Sources */,
+				FFE7AF2232DBAC9EB8E6D01F /* MapSnapshot.swift in Sources */,
 				F6B27B54B2A36F1B89458F60 /* MotionSegmenter.swift in Sources */,
 				7D31A7640A0BA9EE9F8FDDE5 /* Namer.swift in Sources */,
 				798261209443B8337CA307DD /* PlaceResolver.swift in Sources */,
 				D94EBE74A0CF242C06CB22F1 /* RecordingView.swift in Sources */,
 				5E8490FD3CD05461F8C1E3B9 /* RootView.swift in Sources */,
+				0A6980D884A362B92F472EC7 /* RouteDrawing.swift in Sources */,
+				73985613F950354C101438A2 /* ShareScreen.swift in Sources */,
 				FAD7085645C1F9D36075C8C9 /* SolarCalculator.swift in Sources */,
 				3B190C9834757F1F3D7E722E /* Sources.swift in Sources */,
 				FAB3FE169137FBFFE4C461A1 /* StartView.swift in Sources */,
@@ -356,6 +391,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A7BE1A0D78E8245504452613 /* CardTests.swift in Sources */,
 				ABB1FEA21AD769E589A7309E /* LoopTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

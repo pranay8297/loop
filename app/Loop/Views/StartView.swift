@@ -164,7 +164,7 @@ struct WeekCard: View {
                     let isToday = cal.isDate(d, inSameDayAs: today)
                     let k = inWeek.first(where: { cal.isDate($0.startDate, inSameDayAs: d) })?.kind
                     VStack(spacing: 6) {
-                        Text(String(Format.weekdayLetter(d))).font(.system(size: 9.5, design: .monospaced))
+                        Text(String(Format.weekdayLetter(d))).font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(isToday ? Theme.paper : Theme.dim)
                         ZStack {
                             Circle().fill(Theme.surface1)

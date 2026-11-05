@@ -47,7 +47,7 @@ struct SummaryView: View {
                 }
             }
         }
-        .sheet(isPresented: $showShare) { ShareHook(workout: workout) }
+        .sheet(isPresented: $showShare) { ShareScreen(workout: workout) }
         .task { computeHighlights() }
     }
 
@@ -192,7 +192,10 @@ struct SummaryView: View {
 
     private var actions: some View {
         HStack(spacing: 10) {
-            Button("Share") { showShare = true }.buttonStyle(PrimaryButtonStyle())
+            if !workout.isCheckIn {
+                Button("Share") { showShare = true }.buttonStyle(PrimaryButtonStyle())
+                    .accessibilityIdentifier("shareButton")
+            }
             Button(renaming ? "Save name" : "Rename") {
                 if renaming { commitRename() } else { draft = workout.name; renaming = true; nameFocused = true }
             }
@@ -216,50 +219,38 @@ struct SummaryView: View {
     }
 }
 
+/// Non-interactive monochrome map snapshot with the route drawn on top.
 struct RouteCard: View {
     let workout: Workout
+    @State private var snap: MapSnap?
+    @State private var size: CGSize = .zero
+
     var body: some View {
-        let pts = workout.route
-        let pieces = RoutePieces.bySegments(pts, segments: workout.segments)
-        Map(initialPosition: .rect(Self.rect(pts)), interactionModes: []) {
-            RouteOverlay(pieces: pieces, width: 3)
-            if let last = pts.last {
-                Annotation("", coordinate: .init(latitude: last.lat, longitude: last.lon)) {
-                    Circle().fill(Theme.accent).frame(width: 8, height: 8)
+        let pieces = RoutePieces.bySegments(workout.route, segments: workout.segments)
+        GeometryReader { g in
+            ZStack {
+                Theme.surface1
+                if let snap {
+                    Image(uiImage: snap.image).resizable().frame(width: g.size.width, height: g.size.height)
+                    RouteInk(pieces: RouteInk.projected(pieces, with: snap.project), width: 3)
+                } else {
+                    RouteInk(pieces: RouteInk.fitted(pieces, in: CGRect(origin: .zero, size: g.size), padding: 24), width: 3)
                 }
             }
+            .onAppear { size = g.size }
+            .onChange(of: g.size) { _, s in size = s }
         }
-        .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .excludingAll))
-        .mapControlVisibility(.hidden)
         .frame(height: 170)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.hairline, lineWidth: 1))
         .allowsHitTesting(false)
-    }
-
-    static func rect(_ pts: [RoutePoint]) -> MKMapRect {
-        let mps = pts.map { MKMapPoint(CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon)) }
-        guard let f = mps.first else { return .world }
-        var r = MKMapRect(origin: f, size: MKMapSize(width: 0, height: 0))
-        for p in mps { r = r.union(MKMapRect(origin: p, size: MKMapSize(width: 0, height: 0))) }
-        let pad = max(r.size.width, r.size.height) * 0.18 + 200
-        return r.insetBy(dx: -pad, dy: -pad)
-    }
-}
-
-/// Placeholder for Part 2 share cards. Replace this one view.
-struct ShareHook: View {
-    let workout: Workout
-    var body: some View {
-        VStack(spacing: 14) {
-            MonoLabel("Share")
-            Text("Share cards are coming in the next build").font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.paper).multilineTextAlignment(.center)
-            Text(workout.name).font(.system(size: 13)).foregroundStyle(Theme.dim)
+        .accessibilityIdentifier("routeCard")
+        .task(id: size) {
+            guard size.width.isFinite, size.height.isFinite, size.width > 40, size.height > 32 else { return }
+            let box = CGRect(origin: .zero, size: size).insetBy(dx: 20, dy: 16)
+            snap = await MapSnapshot.make(id: workout.id, route: workout.route, size: size, routeBox: box,
+                                          scale: UIScreen.main.scale)
         }
-        .padding(24)
-        .presentationDetents([.height(220)])
-        .presentationBackground(Theme.ink)
     }
 }
 

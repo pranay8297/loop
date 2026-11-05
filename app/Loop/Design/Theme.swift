@@ -11,9 +11,9 @@ enum Theme {
     static let accent = Color(red: 0x5A / 255, green: 0x78 / 255, blue: 0xFF / 255)
 
     static func number(_ size: CGFloat) -> Font {
-        .system(size: size, weight: .semibold).width(.condensed).monospacedDigit()
+        .system(size: size, weight: .semibold).monospacedDigit()
     }
-    static let label = Font.system(size: 10, design: .monospaced)
+    static let label = Font.system(size: 10, weight: .semibold)
     static func title(_ size: CGFloat = 30) -> Font { .system(size: size, weight: .semibold) }
 }
 

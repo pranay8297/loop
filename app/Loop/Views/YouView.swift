@@ -111,7 +111,7 @@ struct MonthGrid: View {
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
                 ForEach(["M", "T", "W", "T", "F", "S", "S"].indices, id: \.self) { i in
-                    Text(["M", "T", "W", "T", "F", "S", "S"][i]).font(.system(size: 9.5, design: .monospaced)).foregroundStyle(Theme.dim)
+                    Text(["M", "T", "W", "T", "F", "S", "S"][i]).font(.system(size: 9.5, weight: .medium)).foregroundStyle(Theme.dim)
                 }
                 ForEach(days, id: \.self) { d in
                     let dayWs = workouts.filter { cal.isDate($0.startDate, inSameDayAs: d) }

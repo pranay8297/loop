@@ -35,22 +35,7 @@ struct RecordingView: View {
         return recorder.mode == .run && recorder.kind == .run ? "Running" : "Walking"
     }
 
-    private var map: some View {
-        Map(position: $camera, interactionModes: [.pan, .zoom]) {
-            RouteOverlay(pieces: RoutePieces.byModes(recorder.liveRoute, modes: recorder.liveModes), width: 4)
-            if let last = recorder.liveRoute.last {
-                Annotation("", coordinate: .init(latitude: last.lat, longitude: last.lon)) {
-                    ZStack {
-                        Circle().fill(Theme.accent.opacity(0.25)).frame(width: 22, height: 22)
-                        Circle().fill(Theme.accent).frame(width: 11, height: 11)
-                            .overlay(Circle().strokeBorder(Theme.ink, lineWidth: 2))
-                    }
-                }
-            }
-        }
-        .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .excludingAll))
-        .mapControlVisibility(.hidden)
-    }
+    private var map: some View { LiveMonoMap(recorder: recorder, camera: $camera) }
 
     private func follow() {
         guard LaunchOptions.isReplay, let last = recorder.liveRoute.last else { return }
@@ -149,6 +134,39 @@ struct HoldToStopButton: View {
                 Text("Keep holding. It saves the moment the bar fills.")
                     .font(.system(size: 11)).foregroundStyle(Theme.dim)
                     .transition(.opacity)
+            }
+        }
+    }
+}
+
+/// Live map in strict greyscale. The accent position dot sits above it so it keeps its colour.
+/// Its own view so camera ticks only re-render the map, not the controls.
+struct LiveMonoMap: View {
+    let recorder: WorkoutRecorder
+    @Binding var camera: MapCameraPosition
+    @State private var cameraTick = 0
+
+    var body: some View {
+        MapReader { proxy in
+            Map(position: $camera, interactionModes: [.pan, .zoom]) {
+                RouteOverlay(pieces: RoutePieces.byModes(recorder.liveRoute, modes: recorder.liveModes), width: 4)
+            }
+            .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .excludingAll))
+            .mapControlVisibility(.hidden)
+            .saturation(0)
+            .onMapCameraChange(frequency: .continuous) { cameraTick &+= 1 }
+            .overlay {
+                let _ = cameraTick
+                if let last = recorder.liveRoute.last,
+                   let p = proxy.convert(CLLocationCoordinate2D(latitude: last.lat, longitude: last.lon), to: .local) {
+                    ZStack {
+                        Circle().fill(Theme.accent.opacity(0.25)).frame(width: 22, height: 22)
+                        Circle().fill(Theme.accent).frame(width: 11, height: 11)
+                            .overlay(Circle().strokeBorder(Theme.ink, lineWidth: 2))
+                    }
+                    .position(p)
+                    .allowsHitTesting(false)
+                }
             }
         }
     }
