@@ -1,0 +1,69 @@
+name: Loop
+options:
+  bundleIdPrefix: com.pranaybindela
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: 538T684785
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  Loop:
+    type: application
+    platform: iOS
+    sources:
+      - path: Loop
+    entitlements:
+      path: Loop/Loop.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: Loop/Info.plist
+      properties:
+        CFBundleDisplayName: Loop
+        CFBundleShortVersionString: "0.1"
+        CFBundleVersion: "1"
+        NSLocationWhenInUseUsageDescription: "Loop uses your location to map your route and measure distance and pace while you record a workout."
+        NSMotionUsageDescription: "Loop uses motion and step data to tell walking from running and to count your steps."
+        NSHealthShareUsageDescription: "Loop saves your workouts and routes to Apple Health."
+        NSHealthUpdateUsageDescription: "Loop saves your workouts and routes to Apple Health."
+        UIBackgroundModes: [location]
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pranaybindela.loop
+        GENERATE_INFOPLIST_FILE: NO
+  LoopTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [LoopTests]
+    dependencies:
+      - target: Loop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pranaybindela.loop.tests
+        GENERATE_INFOPLIST_FILE: YES
+  LoopUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [LoopUITests]
+    dependencies:
+      - target: Loop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pranaybindela.loop.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Loop
+schemes:
+  Loop:
+    build:
+      targets:
+        Loop: all
+    test:
+      targets: [LoopTests, LoopUITests]
