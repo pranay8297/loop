@@ -468,6 +468,63 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
   .pulse,.chip .rec{animation:none}
   .view,.view.on{transition:none;transform:none}
 }
+
+/* home: live map behind the start screen */
+.view[data-view="home"] .scroll{position:relative;z-index:1}
+.heat{position:absolute;inset:0;z-index:0;pointer-events:none}
+.heat svg{width:100%;height:100%;display:block}
+.heat::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#121212 0%,rgba(18,18,18,.95) 30%,rgba(18,18,18,.25) 42%,rgba(18,18,18,.12) 60%,rgba(18,18,18,.85) 80%,#121212 91%)}
+.hd{animation:hp 2.8s ease-in-out infinite}
+@keyframes hp{0%,100%{opacity:.2}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.hd{animation:none;opacity:.7}}
+.live{display:flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;color:var(--a-dim)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(90,120,255,.22);flex:none}
+.live b{color:var(--a-ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* together (phone) */
+.circ{margin-top:16px;border-top:1px solid var(--a-line);padding-top:14px}
+.circ-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.circ-h b{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.circ-h small{font-size:11px;color:var(--a-dim);text-align:right}
+.circ-m{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.mem{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;font-size:8.5px;font-weight:600;box-shadow:inset 0 0 0 1.3px rgba(244,244,241,.22);color:var(--a-dim)}
+.mem.up{background:var(--a-ink);color:var(--a-bg);box-shadow:none}
+.mem.me.up{background:var(--acc);color:#F4F4F1}
+.circ-goal{margin-top:12px;font-size:11.5px;color:var(--a-dim);display:flex;justify-content:space-between}
+.circ-goal b{color:var(--a-ink);font-weight:600;font-variant-numeric:tabular-nums}
+.circ-bar{height:4px;border-radius:4px;background:var(--a-s1);margin-top:6px;overflow:hidden}
+.circ-bar i{display:block;height:100%;background:var(--a-ink);border-radius:4px}
+.circ-n{margin-top:11px;font-size:12px;line-height:1.4;color:var(--a-dim);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.circ-n .react{flex:none}
+.tg-note{font-size:11.5px;color:var(--a-dim);margin-top:18px;line-height:1.45}
+
+/* city pack */
+.citygrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,24px);margin-top:28px}
+@media (max-width:900px){.citygrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.citygrid figure{margin:0;display:grid;gap:10px;align-content:start}
+.citygrid figcaption b{font-weight:600;font-size:14.5px;display:block}
+.citygrid figcaption span{color:var(--fg2);font-size:13px;line-height:1.4;display:block}
+.cy-head{position:absolute;left:7cqw;right:7cqw;top:15cqw}
+.cy-local{font-weight:700;line-height:1.12;letter-spacing:-.035em;white-space:nowrap;text-align:left}
+.cy-sub{margin-top:2.4cqw;font-size:2.7cqw;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+.cy-route{position:absolute;left:14cqw;right:14cqw;top:49cqw;height:46cqw}
+.cy-route svg{width:100%;height:100%}
+.cy-sky{position:absolute;left:0;right:0;top:100cqw;height:30cqw}
+.cy-sky svg{width:100%;height:100%}
+.card.cy .c-big{font-size:22cqw}
+
+/* tiers, privacy columns, plan status */
+.pii{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:30px}
+@media (max-width:760px){.pii{grid-template-columns:1fr}}
+.pii h3{font-size:17px;font-weight:600;letter-spacing:-.02em;padding-bottom:10px;border-bottom:2px solid var(--fg)}
+.pii ul{list-style:none;margin:0;padding:0}
+.pii li{padding:11px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--fg2);line-height:1.5}
+.pii li b{color:var(--fg);font-weight:600}
+.tradeoff{margin-top:24px;padding:16px 18px;border-radius:14px;background:var(--fill);font-size:14.5px;line-height:1.55;color:var(--fg2);max-width:72ch}
+.tradeoff b{color:var(--fg)}
+.phases>li.done .ph-n span{color:var(--accent)}
+.phases>li.next{border-top:2px solid var(--accent)}
+.phases>li.next .ph-n span{color:var(--accent)}
 </style>
 
 <header class="wrap topbar">
@@ -478,9 +535,9 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 <main>
 <section class="wrap hero" aria-label="Loop prototype">
   <div class="hero-copy">
-    <h1>Tap start. Stop. It's saved<span class="acc">.</span></h1>
-    <p class="lede">Loop tracks your runs and walks with just your iPhone, including the run-walk-run kind. When you finish, it saves the workout, names it and turns it into a card worth posting. You fill in nothing, and your data stays on your phone.</p>
-    <div class="tags"><span>Free</span><span>No account</span><span>No server</span><span>iPhone is enough</span><span>Watch optional</span></div>
+    <h1>Just go. It's saved<span class="acc">.</span></h1>
+    <p class="lede">Loop notices when you start a run, a walk or a ride and tracks it with just your iPhone. When you stop, it saves the workout, names it and turns it into a card worth posting. Around the world, small circles of people keep each other going, and nobody is ranked against anybody.</p>
+    <div class="tags"><span>Free</span><span>Starts by itself</span><span>No personal data stored</span><span>iPhone is enough</span><span>Watch optional</span></div>
   </div>
 
   <div class="hero-steps">
@@ -503,9 +560,11 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 
         <!-- HOME -->
         <section class="view on" data-view="home" aria-label="Start screen">
+          <div class="heat" id="heat" aria-hidden="true"></div>
           <div class="scroll">
             <div class="a-label">Thu 5 Nov</div>
             <div class="a-title">Morning</div>
+            <div class="live"><i></i><span><b id="liveN">214</b> people moving near you right now</span></div>
             <div class="weekcard">
               <div class="wk-top"><span class="a-label">This week</span><span class="wk-val"><b class="num" id="wkTime">1 h 55 m</b><span id="wkCount">3 workouts</span></span></div>
               <div class="wk-days" id="wkDays"></div>
@@ -581,11 +640,11 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
         </section>
 
         <!-- FRIENDS -->
-        <section class="view" data-view="friends" aria-label="Friends">
+        <section class="view" data-view="friends" aria-label="Together">
           <div class="scroll">
-            <div class="a-head"><div><div class="a-label">4 friends</div><div class="a-title">Friends</div></div><button class="pill" id="inviteBtn">Invite</button></div>
-            <div class="board" id="board"></div>
-            <div class="feed" id="feed"></div>
+            <div class="a-head"><div><div class="a-label">3 circles · 26 people</div><div class="a-title">Together</div></div><button class="pill" id="inviteBtn">Invite</button></div>
+            <div id="circles"></div>
+            <p class="tg-note">No rankings and no one's numbers. Just who showed up, and how close the circle is to its week.</p>
           </div>
         </section>
 
@@ -601,7 +660,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 
         <nav class="tabbar" role="tablist" aria-label="App tabs">
           <button class="tab" role="tab" data-go="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Start</button>
-          <button class="tab" role="tab" data-go="friends" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.8 13.2c2.5-.2 4.4 1.2 5 4"/></svg>Friends</button>
+          <button class="tab" role="tab" data-go="friends" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.8 13.2c2.5-.2 4.4 1.2 5 4"/></svg>Together</button>
           <button class="tab" role="tab" data-go="you" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/></svg>You</button>
         </nav>
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -615,7 +674,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 
 <section class="wrap sec" aria-labelledby="cmpH">
   <h2 id="cmpH">Finishing a run</h2>
-  <p class="lead">The part that makes Strava a chore. Loop fills in every field for you, and you can still rename a workout later.</p>
+  <p class="lead">The part that makes Strava a chore. Loop notices you stopped, saves the workout and fills in every field. You can still hold stop yourself, and rename a workout later.</p>
   <div class="cmp">
     <div class="cmp-row">
       <span class="cmp-who">Strava today</span>
@@ -624,8 +683,8 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
     </div>
     <div class="cmp-row loop">
       <span class="cmp-who">Loop</span>
-      <ol class="flow"><li>Hold stop</li></ol>
-      <span class="cmp-count">1<small>step</small></span>
+      <ol class="flow"><li>Just stop moving</li></ol>
+      <span class="cmp-count">0<small>steps</small></span>
     </div>
   </div>
 </section>
@@ -656,6 +715,47 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
     <label class="tgl" for="gHide"><input class="switch" type="checkbox" id="gHide" checked>Hide start and finish</label>
   </div>
   <div class="gallery" id="gallery"></div>
+</section>
+
+<section class="wrap sec" aria-labelledby="cityH">
+  <h2 id="cityH">A card for every city</h2>
+  <p class="lead">Run in a big city and the card knows it. Each city gets its landmark drawn in the same single line as your route, its name in its own script, and the city's coordinates, never yours. Anywhere else gets the map card.</p>
+  <div class="citygrid" id="citygrid"></div>
+  <p class="hint" style="margin-top:18px">The first eight of about 40 for launch: the big running cities, then wherever people use Loop most.</p>
+</section>
+
+<section class="wrap sec" aria-labelledby="autoH">
+  <h2 id="autoH">It starts by itself</h2>
+  <p class="lead">You shouldn't have to press start. Your iPhone already knows when you walk, run or ride: a low-power motion chip keeps that record all day for almost no battery. Loop reads it, and turns on GPS only when a real workout begins.</p>
+  <div class="smart">
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V9M9 18V5M14 18v-7M19 18V8"/></svg></span><h3>Every walk, run and ride</h3><p>Read from the motion chip's own record: time, steps, distance and floors. They show up in You without a tap, at zero extra battery. No route, because GPS stays off.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/></svg></span><h3>Runs and rides with the route <i>needs Always</i></h3><p>When you move off and the motion chip says running or riding, GPS comes on. The first minutes come from your steps, so nothing is missed. It stops when you stop or get in a car, then saves and names itself.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6l.6-3h4.8l.6 3M9 18l.6 3h4.8l.6-3"/></svg></span><h3>With an Apple Watch</h3><p>The Watch already notices workouts on its own. Loop picks them up from Apple Health with the route and heart rate. Swims and gym sessions count properly too.</p></article>
+  </div>
+  <div class="online">
+    <div><b>Walks</b><span>Short walks are logged without GPS. A walk turns on GPS only after about 15 minutes away from home or work, so errands don't drain the battery.</span></div>
+    <div><b>Not a workout?</b><span>Swipe it away. Loop learns the places and patterns you don't want counted.</span></div>
+    <div><b>Start button</b><span>Still there. Tap it before a run if you want the route from the first step.</span></div>
+  </div>
+</section>
+
+<section class="wrap sec" aria-labelledby="togH">
+  <h2 id="togH">Together, not versus</h2>
+  <p class="lead">No leaderboards and nobody to beat. Loop puts you in a few small circles, and each circle moves as one: who showed up today, and how close the group is to its week. Nobody has to start a group or organise it. The app does that.</p>
+  <div class="smart">
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.8 13.2c2.5-.2 4.4 1.2 5 4"/></svg></span><h3>Friends, anywhere</h3><p>The people you invite, in Dubai, London or Toronto. One circle, one shared week, whatever the time zone.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.6"/><circle cx="12" cy="12" r="10" stroke-opacity=".5"/></svg></span><h3>Nearby</h3><p>Six to twelve people who move in your part of town, formed by the app and refreshed each month. Made-up names like "Kite 41", never real ones.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></span><h3>Same hour</h3><p>People around the world who go out at the same time of day as you: dawn, lunch or late night. Someone is always out when you are.</p></article>
+  </div>
+  <h3 class="sub3">What a circle sees</h3>
+  <div class="online">
+    <div><b>Showed up today</b><span>A filled dot for each person who moved today. Your own dot is blue.</span></div>
+    <div><b>The circle's week</b><span>One shared count, like 14 of 20 outings. Everyone adds to it, nobody owns it.</span></div>
+    <div><b>Cheers and nudges</b><span>One tap. A quiet friend gets a nudge, not a ranking.</span></div>
+    <div><b>Never shown</b><span>Distances, paces, times, routes, places and any kind of ranking.</span></div>
+  </div>
+  <h3 class="sub3">The live map</h3>
+  <p class="lead" style="margin-top:10px">Open Loop and the first thing you see is a live map of people moving: a glow wherever people are out walking, running or riding right now. It is built from anonymous counts for areas a few kilometres wide, and an area only lights up once at least five people are in it, so no one can be picked out.</p>
 </section>
 
 <section class="wrap sec" aria-labelledby="smartH">
@@ -701,25 +801,39 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
   </div>
 </section>
 
-<section class="wrap sec" aria-labelledby="privH">
-  <h2 id="privH">Private, and no server</h2>
-  <p class="lead">Loop doesn't need a server. There is no Loop account and nothing for us to run or pay for. Your workouts live on your phone. Friends, when we add them, go through iCloud sharing, which Apple hosts.</p>
-  <div class="priv">
-    <div class="box"><span class="mono">Everything</span><h3>On your iPhone</h3><p>Every workout, the full GPS route, steps and walk breaks. Saved into Apple Health too.</p></div>
-    <div class="arr"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h12M10 4l5 5-5 5"/></svg></div>
-    <div class="box"><span class="mono">Optional backup</span><h3>In your iCloud</h3><p>A private copy so a new phone gets your history back. Only your Apple ID can open it, not even the app's maker.</p></div>
-    <div class="arr"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h12M10 4l5 5-5 5"/></svg></div>
-    <div class="box"><span class="mono">Just the card</span><h3>Friends you invite</h3><p>Workout name, distance, time and pace, plus the route with the first and last 200 m cut off.</p></div>
-  </div>
-  <h3 class="sub3">What goes online, and where</h3>
+<section class="wrap sec" aria-labelledby="battH">
+  <h2 id="battH">Light on battery</h2>
+  <p class="lead">Battery is a feature. Loop spends it only while you are actually working out, and we measure it on your phone instead of guessing.</p>
   <div class="online">
-    <div><b>Map tiles</b><span>Downloaded from Apple Maps to draw the map. Nothing about you goes up.</span></div>
-    <div><b>Place name</b><span>One point of each workout goes to Apple Maps to get a name like "Kite Beach". You can switch this off, and names then skip the place.</span></div>
-    <div><b>iCloud backup</b><span>Only if you turn it on. Stored in your own iCloud.</span></div>
-    <div><b>Instagram</b><span>Only the card image, only when you tap share.</span></div>
-    <div><b>Naming, walk breaks, stats</b><span>Never leave the phone.</span></div>
+    <div><b>A normal day</b><span>Under 1% is the target. Motion history and low-power location wakes only. No GPS, no network.</span></div>
+    <div><b>During a workout</b><span>GPS once a second, paused by itself when you stand still. Nothing is drawn while the phone is locked.</span></div>
+    <div><b>Network</b><span>One small upload when a workout ends. The live map loads only while Loop is open. Nudges arrive as notifications, never by checking in the background.</span></div>
+    <div><b>Measured</b><span>Apple's MetricKit reports Loop's own battery use every day. We check it after every build.</span></div>
   </div>
-  <div class="nope"><span>No server</span><span>No ads</span><span>No analytics</span><span>No subscription</span><span>No strangers</span></div>
+</section>
+
+<section class="wrap sec" aria-labelledby="privH">
+  <h2 id="privH">A server that knows nothing about you</h2>
+  <p class="lead">Circles and the live map need a small server. It is built so it never holds personal data: no names, no phone numbers, no emails, no contacts, no routes and no precise places. If it leaked tomorrow, nobody could learn who you are or where you live.</p>
+  <div class="pii">
+    <div><h3>On the server</h3><ul>
+      <li><b>A random ID</b> your phone makes up. No sign-up, no email, no password.</li>
+      <li><b>A made-up handle</b> like "Kite 41".</li>
+      <li><b>Which circles you are in.</b></li>
+      <li><b>Days you showed up.</b> A yes for a day, nothing more.</li>
+      <li><b>Live map counts</b> per area of a few kilometres, with no ID attached.</li>
+      <li><b>A notification token</b> so a nudge can reach your phone.</li>
+    </ul></div>
+    <div><h3>Never leaves your phone</h3><ul>
+      <li><b>Your contacts.</b> You invite people with a link you send yourself.</li>
+      <li><b>Names.</b> Your phone labels friends from your own contacts. The server only sees random IDs.</li>
+      <li><b>Routes, distances, paces and times.</b></li>
+      <li><b>Where you live, work or start.</b></li>
+      <li><b>Health data.</b> It stays in Apple Health.</li>
+    </ul></div>
+  </div>
+  <p class="tradeoff"><b>One trade-off.</b> Loop can't tell you which of your contacts already use it, because that means sending their phone numbers to the server, and even scrambled numbers still count as personal data. So you invite with a link, and the app does everything after that: circles, nudges and the shared week.</p>
+  <div class="nope"><span>No personal data</span><span>No IP logs</span><span>No ads</span><span>No analytics</span><span>No subscription</span><span>No rankings</span></div>
 </section>
 
 <section class="wrap sec" aria-labelledby="markH">
@@ -742,53 +856,81 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 </section>
 
 <section class="wrap sec" aria-labelledby="planH">
-  <h2 id="planH">How we build it</h2>
-  <p class="lead">A native iPhone app in SwiftUI, built to work with just your iPhone. A Watch, if you ever get one, plugs in through Apple Health. Nothing to host and nothing to pay for each month.</p>
+  <h2 id="planH">The plan</h2>
+  <p class="lead">A native iPhone app in SwiftUI plus a small server at the edge. Each step ships to your phone as soon as it works, and nothing personal ever reaches the server.</p>
   <ol class="phases">
-    <li>
-      <div class="ph-n"><b>01</b><span class="mono">First build</span></div>
-      <h3>Works on your phone</h3>
+    <li class="done">
+      <div class="ph-n"><b>01</b><span class="mono">Done</span></div>
+      <h3>Tracking on your iPhone</h3>
       <ul>
-        <li>Record runs, walks and rides with iPhone GPS and motion</li>
-        <li>Walk breaks inside a run, spotted on their own</li>
-        <li>Device check before every start, check-in when it can't track</li>
-        <li>Hold to stop. Saves and names itself</li>
-        <li>Add a Watch later and its workouts flow in through Apple Health</li>
-        <li>Phone workouts saved to Apple Health</li>
-        <li>Share cards and one tap to Instagram Stories</li>
-        <li>Start and finish hidden on cards</li>
+        <li>Runs, walks and rides, walk breaks spotted</li>
+        <li>Device check and check-ins</li>
+        <li>Hold to stop, saved and named by place</li>
+        <li>Apple Health, six share cards, grey maps</li>
+        <li>GPS wobble no longer adds distance</li>
+        <li>A recording survives the app closing</li>
       </ul>
-      <p class="tech mono">SwiftUI · Core Location · Core Motion · MapKit · HealthKit · Foundation Models</p>
+      <p class="tech mono">SwiftUI · Core Location · Core Motion · HealthKit · MapKit</p>
+    </li>
+    <li class="next">
+      <div class="ph-n"><b>02</b><span class="mono">Next</span></div>
+      <h3>A card for every city</h3>
+      <ul>
+        <li>About 40 cities: landmark in one line, name in its own script</li>
+        <li>Picked from where you ran, map card everywhere else</li>
+        <li>Drawn as vectors, so cards stay sharp and small</li>
+      </ul>
+      <p class="tech mono">SwiftUI Canvas · SVG paths</p>
     </li>
     <li>
-      <div class="ph-n"><b>02</b><span class="mono">Smarter</span></div>
-      <h3>Out of the way</h3>
+      <div class="ph-n"><b>03</b><span class="mono">Then</span></div>
+      <h3>Starts by itself</h3>
       <ul>
+        <li>Walks, runs and rides from the motion chip's record</li>
+        <li>GPS on its own for runs and rides</li>
+        <li>Apple Watch workouts from Apple Health</li>
+        <li>Daily battery numbers from MetricKit</li>
+      </ul>
+      <p class="tech mono">CMMotionActivity · CMPedometer · CLMonitor · HealthKit background delivery · MetricKit</p>
+    </li>
+    <li>
+      <div class="ph-n"><b>04</b><span class="mono">Then</span></div>
+      <h3>Circles and the server</h3>
+      <ul>
+        <li>Random IDs, invite links, no sign-up</li>
+        <li>Friends, nearby and same-hour circles, formed by the app</li>
+        <li>Showed-up dots, the shared week, cheers and nudges</li>
+        <li>A check on every field: is this personal data?</li>
+      </ul>
+      <p class="tech mono">Cloudflare Workers · Durable Objects · D1 · App Attest · APNs</p>
+    </li>
+    <li>
+      <div class="ph-n"><b>05</b><span class="mono">Then</span></div>
+      <h3>The live map</h3>
+      <ul>
+        <li>Anonymous counts per area, five people minimum</li>
+        <li>The home screen's background</li>
+        <li>Loads only while Loop is open</li>
+      </ul>
+      <p class="tech mono">H3 cells · Durable Objects · MapKit</p>
+    </li>
+    <li>
+      <div class="ph-n"><b>06</b><span class="mono">Then</span></div>
+      <h3>Friends on board</h3>
+      <ul>
+        <li>TestFlight invites for your first circle</li>
         <li>Lock Screen and Dynamic Island while you move</li>
-        <li>Start with the Action button or Siri</li>
-        <li>Auto-pause and trim the walk home</li>
-        <li>Learns where you live and hides it</li>
-        <li>A Loop app for Apple Watch, whenever you get one</li>
+        <li>Instagram Stories in one tap</li>
       </ul>
-      <p class="tech mono">ActivityKit · App Intents · watchOS later</p>
-    </li>
-    <li>
-      <div class="ph-n"><b>03</b><span class="mono">Friends</span></div>
-      <h3>Your small crew</h3>
-      <ul>
-        <li>Invite friends with a link</li>
-        <li>Feed of their workouts and high fives</li>
-        <li>Weekly board by time moving</li>
-        <li>Friends install it through TestFlight</li>
-      </ul>
-      <p class="tech mono">CloudKit sharing · TestFlight</p>
+      <p class="tech mono">TestFlight · ActivityKit · Meta app ID</p>
     </li>
   </ol>
+  <h3 class="sub3">Your calls</h3>
   <div class="needs">
-    <div class="need"><span class="st ok mono">Ready</span><div><b>Mac with Xcode 26</b><p>Xcode 26.6 is already on this Mac, with the iOS 26 simulator.</p></div></div>
-    <div class="need"><span class="st ok mono">Ready</span><div><b>iPhone 13 Pro on iOS 26</b><p>Paired with this Mac, Developer Mode on. Names come from rules, led by the place.</p></div></div>
-    <div class="need"><span class="st ok mono">Ready</span><div><b>Apple Developer Program</b><p>The only cost. Needed for TestFlight (friends) and iCloud sync. Without it the app runs on your phone but needs a reinstall from the Mac every 7 days.</p></div></div>
-    <div class="need"><span class="st mono">Free</span><div><b>Meta app ID</b><p>Lets Loop open Instagram Stories with your card already placed.</p></div></div>
+    <div class="need"><span class="st mono">Your call</span><div><b>Location "Always"</b><p>Needed for GPS to start on its own. Without it Loop still logs every walk, run and ride from the motion chip, just without the route.</p></div></div>
+    <div class="need"><span class="st mono">Your call</span><div><b>Contacts</b><p>Recommended: invite links, so contacts never leave the phone. The other option finds contacts already on Loop, but sends scrambled phone numbers to the server.</p></div></div>
+    <div class="need"><span class="st mono">Needed</span><div><b>Cloudflare account</b><p>Hosts the server close to people everywhere. Free to build on, about $5 a month once circles go live.</p></div></div>
+    <div class="need"><span class="st ok mono">Ready</span><div><b>Apple Developer Program</b><p>Signing, HealthKit and TestFlight for friends.</p></div></div>
   </div>
 </section>
 </main>
@@ -965,6 +1107,53 @@ function calHTML(includeToday){var map={};HISTORY.forEach(function(h){if(h[0]===
 function cardMonth(){return '<div class="card dk"><div class="c-top">'+mark("dark")+'<span class="c-date">12.10 TO 05.11</span></div><div class="mo-h">25 days in</div><div class="mo-legend"><span><i class="lg"></i>Run</span><span><i class="lg swim"></i>Swim</span><span><i class="lg gym"></i>Gym</span></div><div class="mo-cal-wrap">'+calHTML(true)+'</div><div class="c-bot"><div class="c-big">20<small>workouts</small></div><div class="mo-tot">56.7 KM RUN · 3,600 M SWUM · 4 GYM</div></div></div>'}
 var STYLES={line:["Line",cardLine],photo:["Photo",cardPhoto],bib:["Bib",cardBib],receipt:["Receipt",cardReceipt],month:["25 days in",cardMonth]};
 
+
+/* live map behind the home screen */
+function heatSVG(){var r=rng(44),s='<svg viewBox="0 0 300 640" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="hg"><stop offset="0" stop-color="'+ACC_D+'" stop-opacity=".8"/><stop offset=".45" stop-color="'+ACC_D+'" stop-opacity=".28"/><stop offset="1" stop-color="'+ACC_D+'" stop-opacity="0"/></radialGradient></defs>';
+  s+='<rect width="300" height="640" fill="#121212"/><path d="M-20 170C40 205 95 190 150 230S250 300 330 285V-20H-20Z" fill="#171717"/>';
+  var st="",i;for(i=-8;i<26;i++){var x=i*24;st+="M"+x+" 180L"+(x+180)+" 700"}for(i=0;i<30;i++){var y=200+i*22;st+="M-40 "+y+"L340 "+(y-120)}
+  s+='<path d="'+st+'" stroke="#1D1D1D" stroke-width="1.1" fill="none"/>';
+  var B=[[150,300,95],[82,355,60],[222,392,72],[132,452,52],[250,300,44],[64,262,40],[196,486,46]];
+  B.forEach(function(b){s+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+b[2]+'" fill="url(#hg)"/>'});
+  for(i=0;i<34;i++){var b=B[Math.floor(r()*B.length)],a=r()*Math.PI*2,d=r()*b[2]*.7;s+='<circle class="hd" cx="'+(b[0]+Math.cos(a)*d).toFixed(1)+'" cy="'+(b[1]+Math.sin(a)*d).toFixed(1)+'" r="1.7" fill="'+PAPER+'" style="animation-delay:-'+(r()*2.8).toFixed(2)+'s"/>'}
+  return s+'</svg>'}
+
+/* city pack: landmark in one line, name in its own script */
+var CITIES=[
+  {key:"dxb",name:"Dubai",local:"دبي",fs:21,sub:"Dubai · 25.20° N 55.27° E",tone:"dk",seed:31,kind:"out",km:"5.24",time:"33:27",pace:"6:23",date:"05.11.26 · 06:12",land:"Burj Khalifa",
+   sky:"M91 58V46H93V36H95V26H96.6V17H97.8V9H99L100 1L101 9H102.2V17H103.4V26H105V36H107V46H109V58M62 58V48H72V58M128 58V44H136V58M140 58V51H150V58"},
+  {key:"auh",name:"Abu Dhabi",local:"أبوظبي",fs:18,sub:"Abu Dhabi · 24.45° N 54.38° E",tone:"lt",seed:12,kind:"loop",km:"8.10",time:"47:02",pace:"5:48",date:"02.11.26 · 17:40",land:"Sheikh Zayed Grand Mosque",
+   sky:"M64 58V46H136V58M86 46C86 32 95 27 100 25C105 27 114 32 114 46M100 25V19M70 46C70 41 74 38.5 77 38.5S84 41 84 46M116 46C116 41 120 38.5 123 38.5S130 41 130 46M55 58V18H60V58M55 18L57.5 11L60 18M140 58V18H145V58M140 18L142.5 11L145 18"},
+  {key:"lon",name:"London",local:"London",fs:19,sub:"United Kingdom · 51.51° N 0.13° W",tone:"dk",seed:7,kind:"out",km:"10.00",time:"54:10",pace:"5:25",date:"19.10.26 · 07:05",land:"Elizabeth Tower",
+   sky:"M94 58V26H106V58M93 26H107M95 26V18H105V26M95 18L100 6L105 18M100 6V1M106 46H154V58M112 46V42M120 46V42M128 46V42M136 46V42M144 46V42M152 46V42"},
+  {key:"par",name:"Paris",local:"Paris",fs:21,sub:"France · 48.86° N 2.35° E",tone:"lt",seed:18,kind:"loop",km:"7.32",time:"41:15",pace:"5:38",date:"12.10.26 · 08:20",land:"Eiffel Tower",
+   sky:"M84 58C90 47 95 30 97.6 8M116 58C110 47 105 30 102.4 8M89 58Q100 46 111 58M88.4 47H111.6M93.6 34H106.4M97.6 8H102.4V4H97.6ZM100 4V.5"},
+  {key:"nyc",name:"New York",local:"New York",fs:16,sub:"United States · 40.71° N 74.01° W",tone:"lt",seed:23,kind:"out",km:"6.21",time:"37:40",pace:"6:04",date:"28.09.26 · 06:40",land:"Empire State Building",
+   sky:"M88 58V30H90V24H93V18H95.5V12H97.5V8H99.3L100 1L100.7 8H102.5V12H104.5V18H107V24H110V30H112V58M68 58V40H80V58M120 58V36H130V58M134 58V46H142V58"},
+  {key:"tyo",name:"Tokyo",local:"東京",fs:18,sub:"Tokyo · 35.68° N 139.69° E",tone:"dk",seed:4,kind:"loop",km:"5.02",time:"29:31",pace:"5:53",date:"03.09.26 · 05:50",land:"Tokyo Tower",
+   sky:"M86 58L97 10M114 58L103 10M90 58Q100 50 110 58M88 44H112V40H88ZM95.5 24H104.5V21H95.5ZM97 10H103M100 10V.5"},
+  {key:"sin",name:"Singapore",local:"Singapura",fs:15,sub:"Singapore · 1.29° N 103.85° E",tone:"lt",seed:15,kind:"loop",km:"12.40",time:"1:12:05",pace:"5:49",date:"21.08.26 · 06:30",land:"Marina Bay Sands",
+   sky:"M74 58L77 23.5H85L86.5 58M94 58L97 23.5H105L106.5 58M114 58L117 23.5H125L126.5 58M70 23.5H144M144 23.5C143 21.6 141 20.6 138 20.6H73C71.6 21.4 70.6 22.4 70 23.5"},
+  {key:"hyd",name:"Hyderabad",local:"హైదరాబాద్",fs:12,sub:"Hyderabad · 17.39° N 78.49° E",tone:"dk",seed:27,kind:"out",km:"4.60",time:"30:12",pace:"6:34",date:"14.08.26 · 06:05",land:"Charminar",
+   sky:"M83 58V30H117V58M92 58V44C92 37 108 37 108 44V58M86 30V24H114V30M77 58V12H83V30M77 12C77 7 83 7 83 12M80 7.5V3M123 58V12H117V30M117 12C117 7 123 7 123 12M120 7.5V3"}];
+function cityRoute(seed,kind,km){var r=rng(seed),pts=[],i,t;
+  var a1=.2+r()*.12,a2=.1+r()*.1,a3=.05+r()*.06,p1=r()*6.3,p2=r()*6.3,p3=r()*6.3,sx=1.25+r()*.4;
+  function blob(cx,cy,R,from,to,dir){for(t=from;dir>0?t<=to:t>=to;t+=dir*.03){var rr=R*(1+a1*Math.sin(t+p1)+a2*Math.sin(2*t+p2)+a3*Math.sin(3*t+p3));pts.push([cx+Math.cos(t)*rr*sx,cy+Math.sin(t)*rr])}}
+  if(kind==="loop"){blob(0,0,60,0,Math.PI*2-.25,1)}
+  else{var ang=-.9+r()*.4,x=0,y=0,out=[[0,0]];for(i=0;i<70;i++){ang+=Math.sin(i*.21+p1)*.06;x+=Math.cos(ang)*2.2;y+=Math.sin(ang)*2.2;out.push([x,y])}
+    pts=out.slice();var ex=x+Math.cos(ang)*24,ey=y+Math.sin(ang)*24;blob(ex,ey,24,ang+Math.PI+.35,ang+Math.PI+Math.PI*2-.35,1);
+    out.reverse().forEach(function(q){pts.push([q[0]+3,q[1]+3])})}
+  pts=smooth(resample(pts,1.2),2);
+  return metrics(pts,km,function(k){return 340+10*Math.sin(k*1.9+seed)},0)}
+CITIES.forEach(function(c){c.R=cityRoute(c.seed,c.kind,parseFloat(c.km))});
+function cardCity2(c){var dk=c.tone==="dk",col=dk?PAPER:INK;
+  return '<div class="card '+c.tone+' cy"><div class="c-top">'+mark(dk?"dark":"light")+'<span class="c-date">'+c.date+'</span></div>'+
+  '<div class="cy-head"><div class="cy-local" style="font-size:'+c.fs+'cqw" dir="auto">'+c.local+'</div><div class="cy-sub">'+c.sub+'</div></div>'+
+  '<div class="cy-route">'+routeSVG(c.R,{aspect:72/46,pad:.06,w:.016,color:col,dot:dk?ACC_D:ACC_L,hide:true})+'</div>'+
+  '<div class="cy-sky"><svg viewBox="0 0 200 60" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M0 58H200" stroke="'+col+'" stroke-opacity=".3" stroke-width=".8" fill="none"/><path d="'+c.sky+'" fill="none" stroke="'+col+'" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
+  '<div class="c-bot"><div class="c-big">'+c.km+'<small>km</small></div><div class="c-row"><span><i>Time</i>'+c.time+'</span><span><i>Pace</i>'+c.pace+' /km</span></div></div></div>'}
+function renderCities(){$("#citygrid").innerHTML=CITIES.map(function(c){return '<figure>'+cardCity2(c)+'<figcaption><b>'+c.name+'</b><span>'+c.land+'</span></figcaption></figure>'}).join("")}
+
 /* gallery */
 function renderGallery(){var hide=$("#gHide").checked;
   var items=[["Line","Solid where you ran, dotted where you walked. The blue dot is where you stopped.",cardLine({hide:hide})],["Photo","Your route over a photo you took, in black and white.",cardPhoto({hide:hide})],["Bib","No race needed. 5.24 is the number.",cardBib()],["Receipt","Every split, itemised. Fastest kilometre in blue.",cardReceipt()],["Lanes","Needs an Apple Watch. A pool swim, length by length.",cardLanes()],["25 days in","Runs are dots, swims are rings, gym days are squares.",cardMonth()]];
@@ -982,11 +1171,11 @@ var SMART=[
 function renderSmart(){$("#smart").innerHTML=SMART.map(function(s){return '<article><span class="ic">'+s[0]+'</span><h3>'+s[1]+(s[4]?'<i>You asked</i>':'')+'</h3><p>'+s[2]+'</p>'+(s[3]?'<div class="ex">'+s[3].map(function(e){return '<span>'+e+'</span>'}).join("")+'</div>':"")+'</article>'}).join("")}
 
 /* steps */
-var STEPS=[["home","Start","One big button. Loop first checks what your iPhone can measure. If it can't track an activity, it says so and offers a check-in."],
+var STEPS=[["home","Start","Loop starts on its own when you start moving. The big button is there if you want it, and if your phone can't track an activity, Loop says so and offers a check-in."],
   ["run","Go","Run, walk, run again in one workout. Walk breaks are spotted on their own and drawn as dots. It pauses at red lights."],
-  ["done","Stop","Hold stop for a second. Saved, named and in Apple Health. No title, no form, no Save button."],
+  ["done","Stop","Just stop, or hold stop for a second. Saved, named and in Apple Health. No title, no form, no Save button."],
   ["share","Share","Pick a look and tap Instagram. Start and finish are hidden, so nobody learns where you live."],
-  ["friends","Friends","Only people you invite with a link. See each other's workouts and send a high five. No followers, no ads."],
+  ["friends","Together","Circles the app forms for you: friends anywhere, people nearby, people who go out at the same hour. Nobody is ranked. Just who showed up."],
   ["you","You","Every run, walk and check-in in one place, each one named for you."]];
 $("#steps").innerHTML=STEPS.map(function(s,i){return '<li><button class="step" data-go="'+s[0]+'"><span class="st-n">0'+(i+1)+'</span><span class="st-t">'+s[1]+'</span><span class="st-d">'+s[2]+'</span></button></li>'}).join("");
 
@@ -1077,11 +1266,18 @@ function postHTML(f){var on=!!state.react[f.id],count=f.n+(on?1:0);
   if(!artCache[f.id])artCache[f.id]=f.art();
   return '<article class="post"><header><span class="av">'+(f.me?iconSVG({bg:false}):f.ini)+'</span><div><b>'+f.who+'</b><small>'+f.when+'</small></div><span class="sp">'+ICON[f.sport]+'</span></header><h4>'+(f.me?RUN.name:f.name)+'</h4><div class="p-stats">'+f.stats.map(function(s){return '<span><b class="num">'+s[0]+'</b>'+s[1]+'</span>'}).join("")+'</div><div class="p-art">'+artCache[f.id]+'</div>'+
   (f.me?'<footer><span class="react" style="cursor:default">Friends can high-five this</span></footer>':'<footer><button class="react" data-r="'+f.id+'" aria-pressed="'+on+'">'+ICON.hand+'High five <span>'+count+'</span></button></footer>')+'</article>'}
-function renderFriends(){var rows=[["Omar",185],["Aditi",128],["You",Math.round(weekMin()),1],["Karan",88],["Rhea",72]].sort(function(a,b){return b[1]-a[1]});
-  $("#board").innerHTML='<div class="b-h"><span class="a-label">This week</span><span class="a-label">Time moving</span></div>'+rows.map(function(r){return '<div class="b-row'+(r[2]?" me":"")+'"><span>'+r[0]+'</span><span class="b-bar"><i style="width:'+(r[1]/185*100).toFixed(1)+'%"></i></span><span class="b-v">'+fmtMin(r[1])+'</span></div>'}).join("")+(state.ran?'<div class="b-note">This morning moved you up to 2nd.</div>':"");
-  $("#feed").innerHTML=(state.ran?[ME]:[]).concat(FRIENDS).map(postHTML).join("")}
-$("#feed").addEventListener("click",function(e){var b=e.target.closest("[data-r]");if(!b)return;state.react[b.dataset.r]=!state.react[b.dataset.r];renderFriends()});
-$("#inviteBtn").addEventListener("click",function(){toast("Invite link ready. Friends tap it and you see each other's workouts.")});
+var CIRCLES=[
+  {id:"fr",name:"Friends",meta:"6 people · 4 countries",done:14,goal:20,mem:[["OM",1],["AD",1],["me",0],["KA",0],["RH",1],["SA",0]],note:"Karan hasn't been out since Monday.",act:"Nudge"},
+  {id:"nb",name:"Nearby · Jumeirah",meta:"9 people · this month",done:31,goal:40,mem:[["",1],["",1],["",0],["me",0],["",1],["",1],["",0],["",1],["",0]],note:"5 of 9 went out this morning.",act:"Cheer"},
+  {id:"dw",name:"Dawn",meta:"11 people · 7 time zones",done:42,goal:55,mem:[["",1],["",0],["",1],["me",0],["",1],["",1],["",0],["",1],["",1],["",0],["",1]],note:"It's 6 AM somewhere: 3 people are out right now.",act:"Cheer"}];
+function renderFriends(){var r=state.ran;
+  $("#circles").innerHTML=CIRCLES.map(function(c){var on=!!state.react[c.id],done=c.done+(r?1:0);
+    var mem=c.mem.map(function(m){var me=m[0]==="me",up=me?r:m[1];return '<span class="mem'+(up?" up":"")+(me?" me":"")+'">'+(me?"You":m[0])+'</span>'}).join("");
+    return '<section class="circ"><div class="circ-h"><b>'+c.name+'</b><small>'+c.meta+'</small></div><div class="circ-m">'+mem+'</div>'+
+      '<div class="circ-goal"><span>This week, together</span><span><b>'+done+'</b> of '+c.goal+' outings</span></div><div class="circ-bar"><i style="width:'+(done/c.goal*100).toFixed(1)+'%"></i></div>'+
+      '<div class="circ-n"><span>'+c.note+'</span><button class="react" data-r="'+c.id+'" aria-pressed="'+on+'">'+(on?(c.act==="Nudge"?"Nudged":"Cheered"):c.act)+'</button></div></section>'}).join("")}
+$("#circles").addEventListener("click",function(e){var b=e.target.closest("[data-r]");if(!b)return;state.react[b.dataset.r]=!state.react[b.dataset.r];renderFriends()});
+$("#inviteBtn").addEventListener("click",function(){toast("Invite link ready. Send it from Messages. Your contacts never leave your phone.")});
 
 /* you */
 function renderYou(){var r=state.ran;
@@ -1129,6 +1325,6 @@ $("#photoReset").addEventListener("click",function(){if(state.photo)URL.revokeOb
 $("#topIcon").innerHTML=iconSVG();$("#lockIcon").innerHTML=iconSVG();$("#markDark").innerHTML=iconSVG({bg:false,tone:"dark"});$("#markLight").innerHTML=iconSVG({bg:false,tone:"light"});
 $("#nLoop").innerHTML=iconSVG();$("#nRan").innerHTML=ranSVG();$("#nGlow").innerHTML=glowSVG();
 
-renderGallery();renderSmart();go("home");
+renderGallery();renderSmart();renderCities();$("#heat").innerHTML=heatSVG();go("home");
 })();
 </script>
