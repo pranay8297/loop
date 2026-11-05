@@ -181,4 +181,56 @@ final class LoopUITests: XCTestCase {
         a.buttons["style-receipt"].tap()
         sleep(2); shot("share-screen-receipt.png")
     }
+
+    /// Walks picked up from (synthetic) motion history show in You; "Not a workout" removes one
+    /// and a rescan on the next launch does not bring it back.
+    func testDetectedWorkoutNotAWorkout() throws {
+        let a = app(["-LoopFakeMotionHistory", "-LoopClearDismissed"])
+        a.launch()
+        a.tabBars.buttons["You"].tap()
+        let rows = a.buttons.matching(identifier: "workoutRow")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 5))
+        let three = NSPredicate(format: "count == 3")
+        wait(for: [expectation(for: three, evaluatedWith: rows)], timeout: 5)
+        let walk = rows.firstMatch
+        XCTAssertTrue(walk.label.contains("auto"), walk.label)
+        let walkLabel = walk.label
+        walk.tap()
+        let notIt = a.buttons["notAWorkoutButton"]
+        XCTAssertTrue(notIt.waitForExistence(timeout: 5))
+        notIt.tap()
+        wait(for: [expectation(for: NSPredicate(format: "count == 2"), evaluatedWith: rows)], timeout: 5)
+        a.terminate()
+
+        // Fresh in-memory store again, so only the dismissed list keeps the walk out.
+        let b = app(["-LoopFakeMotionHistory"])
+        b.launch()
+        b.tabBars.buttons["You"].tap()
+        let rows2 = b.buttons.matching(identifier: "workoutRow")
+        XCTAssertTrue(rows2.firstMatch.waitForExistence(timeout: 5))
+        sleep(2)
+        XCTAssertEqual(rows2.count, 2)
+        XCTAssertFalse(rows2.allElementsBoundByIndex.contains { $0.label == walkLabel })
+    }
+
+    /// Battery and auto-log screenshots when LOOP_SHOTS3 is set (TEST_RUNNER_LOOP_SHOTS3=<dir>).
+    func testCaptureAutoLogScreenshots() throws {
+        guard let dir = ProcessInfo.processInfo.environment["LOOP_SHOTS3"] else { throw XCTSkip("LOOP_SHOTS3 not set") }
+        func shot(_ name: String) {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name))
+        }
+        let a = app(["-LoopFakeMotionHistory", "-LoopClearDismissed"])
+        a.launch()
+        recordAndStop(a)
+        a.buttons["doneButton"].tap()
+        a.tabBars.buttons["You"].tap()
+        sleep(2); shot("you-list.png")
+        a.buttons.matching(identifier: "workoutRow").element(boundBy: 1).tap()
+        sleep(1); shot("summary-detected.png")
+        a.navigationBars.buttons.firstMatch.tap()
+        a.buttons["settingsButton"].tap()
+        sleep(1); shot("settings.png")
+        a.buttons["diagnosticsRow"].tap()
+        sleep(1); shot("diagnostics.png")
+    }
 }

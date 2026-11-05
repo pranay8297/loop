@@ -41,7 +41,13 @@ protocol LocationSource: AnyObject {
 protocol MotionSource: AnyObject {
     func activities() -> AsyncStream<MotionSample>
     func pedometer(from start: Date) -> AsyncStream<PedometerSample>
+    /// Stops activity updates only (the pedometer keeps going).
+    func stopActivities()
     func stop()
+}
+
+extension MotionSource {
+    func stopActivities() {}
 }
 
 /// Virtual clock so replays at N times speed still produce real-looking times.
@@ -124,6 +130,8 @@ final class LiveMotionSource: MotionSource {
         }
     }
 
+    func stopActivities() { activityManager.stopActivityUpdates() }
+
     func stop() {
         activityManager.stopActivityUpdates()
         pedometerManager.stopUpdates()
@@ -140,6 +148,10 @@ final class ReplayFeed: LocationSource, MotionSource {
     let clock: RecordingClock
     let points: [ReplayPoint]
     private var tasks: [Task<Void, Never>] = []
+    private var activityTasks: [Task<Void, Never>] = []
+    /// Virtual time of the route's first point, fixed by the first play. Later plays (after
+    /// a pause turned GPS off) continue from the current virtual time instead of starting over.
+    private var base: Date?
 
     init(clock: RecordingClock) {
         self.clock = clock
@@ -155,11 +167,15 @@ final class ReplayFeed: LocationSource, MotionSource {
     /// Calls `body` for each point when its virtual time arrives.
     private func play(_ body: @escaping (ReplayPoint, Date) -> Void, finish: @escaping () -> Void) -> Task<Void, Never> {
         let pts = points, clock = clock
+        let base = self.base ?? clock.now()
+        let restarted = self.base != nil
+        self.base = base
         return Task {
-            let base = clock.now()
+            let startedAt = clock.now()
             for p in pts {
                 if Task.isCancelled { break }
                 let due = base.addingTimeInterval(p.t)
+                if restarted && due < startedAt { continue }
                 let wait = due.timeIntervalSince(clock.now()) / clock.scale
                 if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
                 if Task.isCancelled { break }
@@ -180,7 +196,7 @@ final class ReplayFeed: LocationSource, MotionSource {
     func activities() -> AsyncStream<MotionSample> {
         AsyncStream { c in
             var last: MotionActivity?
-            tasks.append(play({ p, due in
+            activityTasks.append(play({ p, due in
                 let a: MotionActivity = p.speed >= 2.2 ? .running : .walking
                 if a != last { last = a; c.yield(MotionSample(time: due, activity: a, confidence: .high)) }
             }, finish: { c.finish() }))
@@ -199,6 +215,11 @@ final class ReplayFeed: LocationSource, MotionSource {
         }
     }
 
-    func stop() { tasks.forEach { $0.cancel() }; tasks.removeAll() }
+    func stopActivities() { activityTasks.forEach { $0.cancel() }; activityTasks.removeAll() }
+
+    func stop() {
+        tasks.forEach { $0.cancel() }; tasks.removeAll()
+        stopActivities()
+    }
 }
 #endif

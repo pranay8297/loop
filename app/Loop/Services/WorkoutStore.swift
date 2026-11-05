@@ -41,6 +41,7 @@ enum WorkoutStore {
         let named = await namer.name(for: namingInput(for: w, history: history, place: nil))
         w.name = named.name; w.nameReason = named.reason
         ctx.insert(w)
+        removeDetected(overlapping: r.start, r.end, in: ctx)
         try? ctx.save()
 
         let route = r.route
@@ -65,6 +66,14 @@ enum WorkoutStore {
             }
         }
         return w
+    }
+
+    /// A recording always wins: workouts picked up from motion history that overlap it go.
+    static func removeDetected(overlapping start: Date, _ end: Date, in ctx: ModelContext) {
+        let motion = (try? ctx.fetch(FetchDescriptor<Workout>(predicate: #Predicate { $0.source == "motion" }))) ?? []
+        for d in motion where MotionHistory.overlap(start, end, d.startDate, d.endDate) >= MotionHistory.minOverlap {
+            ctx.delete(d)
+        }
     }
 
     static func checkIn(kind: ActivityKind, minutes: Int, earlier: Bool, in ctx: ModelContext,

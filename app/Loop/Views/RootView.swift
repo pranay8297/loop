@@ -32,7 +32,7 @@ final class Session {
             let (loc, mot, clock) = LaunchOptions.makeSources(origin: origin)
             recorder = WorkoutRecorder.restore(d, location: loc, motion: mot, clock: clock,
                                                paused: paused, gap: max(0, clock.now().timeIntervalSince(d.savedAt)),
-                                               draftStore: store)
+                                               draftStore: store, powerLog: PowerLog.shared)
             saved = nil
             showingCover = true
         }
@@ -44,6 +44,7 @@ struct RootView: View {
     @State private var env = DeviceEnvironmentProvider(forceReady: LaunchOptions.isReplay)
     @State private var tab = 0
     @Environment(\.scenePhase) private var phase
+    @Environment(\.modelContext) private var ctx
 
     var body: some View {
         TabView(selection: $tab) {
@@ -81,9 +82,17 @@ struct RootView: View {
             }
             .preferredColorScheme(.dark)
         }
+        .task { await MotionHistory.shared.scanIfDue(ctx) }
         .onChange(of: phase) { _, p in
-            if p == .active { env.refresh() }
-            if p == .background { session.recorder?.persistDraft() }
+            if p == .active {
+                env.refresh()
+                PowerLog.shared?.log(.foreground)
+                Task { await MotionHistory.shared.scanIfDue(ctx) }
+            }
+            if p == .background {
+                session.recorder?.persistDraft()
+                PowerLog.shared?.log(.background)
+            }
         }
     }
 }

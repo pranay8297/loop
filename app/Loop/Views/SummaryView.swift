@@ -26,7 +26,9 @@ struct SummaryView: View {
                     Text(workout.nameReason).font(.system(size: 12)).foregroundStyle(Theme.dim).lineSpacing(2)
                 }
                 .padding(.top, 12)
-                if !workout.isCheckIn {
+                if workout.isDetected {
+                    detectedStats.padding(.top, 18)
+                } else if !workout.isCheckIn {
                     if workout.route.count > 1 { RouteCard(workout: workout).padding(.top, 14) }
                     if workout.kind == .run, !workout.segments.isEmpty { runWalk.padding(.top, 14) }
                     stats.padding(.top, 18)
@@ -34,7 +36,12 @@ struct SummaryView: View {
                     splits.padding(.top, 18)
                 }
                 actions.padding(.top, 22)
-                if onDone == nil { deleteRow.padding(.top, 26) }
+                if workout.isDetected {
+                    Button("Not a workout") { MotionHistory.shared.dismiss(workout, in: ctx); dismiss() }
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.dim)
+                        .padding(.top, 26)
+                        .accessibilityIdentifier("notAWorkoutButton")
+                } else if onDone == nil { deleteRow.padding(.top, 26) }
             }
             .padding(.horizontal, 20).padding(.vertical, 16)
         }
@@ -107,6 +114,7 @@ struct SummaryView: View {
     private var meta: String {
         let kindText: String
         if workout.isCheckIn { kindText = "\(workout.kind.displayName) check-in" }
+        else if workout.isDetected { kindText = "\(workout.kind.displayName), logged by itself" }
         else if workout.kind == .run { kindText = workout.walkMeters > 0 ? "Run with walk breaks" : "Run" }
         else { kindText = workout.kind.displayName }
         return [Format.dayLabel(workout.startDate), Format.clockAMPM(workout.startDate), kindText, "iPhone"].joined(separator: " · ")
@@ -145,6 +153,18 @@ struct SummaryView: View {
                 StatCell(value: steps.map { $0.formatted() } ?? "--", unit: "steps")
                 StatCell(value: cadenceAvg, unit: "steps/min avg")
             }
+        }
+    }
+
+    /// Motion-record workouts: no route, so distance (not for rides), time, steps and floors.
+    private var detectedStats: some View {
+        var cells: [(String, String)] = []
+        if workout.kind != .ride, workout.distanceMeters > 0 { cells.append((Format.km(workout.distanceMeters), "km")) }
+        cells.append((Format.duration(workout.movingSeconds), "time"))
+        if let s = workout.steps { cells.append((s.formatted(), "steps")) }
+        if let f = workout.floors, f > 0 { cells.append(("\(f)", f == 1 ? "floor" : "floors")) }
+        return HStack(alignment: .top, spacing: 8) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, c in StatCell(value: c.0, unit: c.1) }
         }
     }
 
@@ -192,7 +212,7 @@ struct SummaryView: View {
 
     private var actions: some View {
         HStack(spacing: 10) {
-            if !workout.isCheckIn {
+            if !workout.isCheckIn && !workout.isDetected {
                 Button("Share") { showShare = true }.buttonStyle(PrimaryButtonStyle())
                     .accessibilityIdentifier("shareButton")
             }

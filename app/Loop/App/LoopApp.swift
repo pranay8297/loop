@@ -15,6 +15,13 @@ struct LoopApp: App {
         let config = ModelConfiguration(isStoredInMemoryOnly: inMemory)
         container = try! ModelContainer(for: Workout.self, configurations: config)
         if args.contains("-LoopDraftTest") && args.contains("-LoopClearDraft") { RecordingDraftStore.shared?.clear() }
+        PowerLog.shared?.prune()
+        DispatchQueue.main.async {
+            // By now UIApplication knows whether Core Location woke the app in the background.
+            let bg = UIApplication.shared.applicationState == .background
+            PowerLog.shared?.log(.launch, reason: bg ? "background launch" : "launch")
+        }
+        MetricsStore.shared.start()
         // Restore at launch, not when a view appears: after a background relaunch by Core Location
         // the location session must be recreated immediately.
         let s = Session()
@@ -54,6 +61,7 @@ enum LaunchOptions {
         let (loc, mot, clock) = makeSources(origin: Date())
         let r = WorkoutRecorder(location: loc, motion: mot, clock: clock)
         r.draftStore = RecordingDraftStore.shared
+        r.powerLog = PowerLog.shared
         return r
     }
 
@@ -63,8 +71,8 @@ enum LaunchOptions {
         #if DEBUG
         if isReplay {
             let clock = RecordingClock(scale: replaySpeed, origin: origin)
-            let feed = ReplayFeed(clock: clock)
-            return (feed, feed, clock)
+            // Separate feeds so turning GPS off during a pause leaves the pedometer running.
+            return (ReplayFeed(clock: clock), ReplayFeed(clock: clock), clock)
         }
         #endif
         return (LiveLocationSource(), LiveMotionSource(), RecordingClock())

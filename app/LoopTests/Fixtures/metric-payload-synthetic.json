@@ -1,0 +1,30 @@
+{
+  "_comment": "SYNTHETIC fixture written by hand to match MetricKit's documented jsonRepresentation() keys. Not a real payload.",
+  "appVersion": "0.1",
+  "timeStampBegin": "2026-11-04 00:00:00 +0000",
+  "timeStampEnd": "2026-11-04 23:59:00 +0000",
+  "applicationTimeMetrics": {
+    "cumulativeForegroundTime": "2700 sec",
+    "cumulativeBackgroundTime": "12540 sec",
+    "cumulativeBackgroundAudioTime": "0 sec",
+    "cumulativeBackgroundLocationTime": "7200 sec"
+  },
+  "cpuMetrics": {
+    "cumulativeCPUTime": "312 sec",
+    "cumulativeCPUInstructions": "1000 kiloinstructions"
+  },
+  "locationActivityMetrics": {
+    "cumulativeBestAccuracyForNavigationTime": "6900 sec",
+    "cumulativeBestAccuracyTime": "300 sec",
+    "cumulativeNearestTenMetersAccuracyTime": "0 sec",
+    "cumulativeHundredMetersAccuracyTime": "0 sec",
+    "cumulativeKilometerAccuracyTime": "0 sec",
+    "cumulativeThreeKilometersAccuracyTime": "0 sec"
+  },
+  "networkTransferMetrics": {
+    "cumulativeWifiUpload": "20 kB",
+    "cumulativeWifiDownload": "1 MB",
+    "cumulativeCellularUpload": "5 kB",
+    "cumulativeCellularDownload": "500 kB"
+  }
+}

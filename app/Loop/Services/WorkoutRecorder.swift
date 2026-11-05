@@ -40,7 +40,6 @@ final class WorkoutRecorder {
     @ObservationIgnored let clock: RecordingClock
     @ObservationIgnored private let location: LocationSource
     @ObservationIgnored private let motion: MotionSource
-    @ObservationIgnored private var tasks: [Task<Void, Never>] = []
     @ObservationIgnored private var points: [RoutePoint] = []
     @ObservationIgnored private var modes: [MoveKind] = []
     @ObservationIgnored private var motionSamples: [MotionSample] = []
@@ -65,30 +64,79 @@ final class WorkoutRecorder {
         startDate = clock.now()
         filter = DistanceFilter(kind: kind, start: startDate)
         state = .recording
-        startSources()
+        startSources(reason: "recording start")
         persistDraft()
     }
 
-    private func startSources() {
+    /// How long a pause may keep GPS on before Loop turns it off to save battery.
+    static let gpsOffAfterPause: TimeInterval = 180
+
+    /// True while the location source is running.
+    private(set) var gpsOn = false
+    /// Where GPS on/off events go. Nil in tests unless set.
+    @ObservationIgnored var powerLog: PowerLog?
+    @ObservationIgnored private var locationTask: Task<Void, Never>?
+    @ObservationIgnored private var activityTask: Task<Void, Never>?
+    @ObservationIgnored private var pedometerTask: Task<Void, Never>?
+    @ObservationIgnored private var tickTask: Task<Void, Never>?
+
+    private func startSources(reason: String) {
+        startLocation(reason: reason)
+        startPedometer()
+        startTick()
+    }
+
+    private func startLocation(reason: String) {
+        guard !gpsOn else { return }
+        gpsOn = true
+        powerLog?.log(.gpsOn, reason: reason)
         let loc = location.fixes()
-        tasks.append(Task { [weak self] in
+        locationTask = Task { [weak self] in
             for await fix in loc { self?.ingest(fix) }
-        })
+        }
         let acts = motion.activities()
-        tasks.append(Task { [weak self] in
+        activityTask = Task { [weak self] in
             for await a in acts { self?.motionSamples.append(a) }
-        })
+        }
+    }
+
+    /// Turns GPS (and activity updates) off. The background location session ends with it,
+    /// so a paused recording no longer keeps the app running.
+    private func stopLocation(reason: String) {
+        guard gpsOn else { return }
+        gpsOn = false
+        locationTask?.cancel(); locationTask = nil
+        activityTask?.cancel(); activityTask = nil
+        location.stop()
+        motion.stopActivities()
+        powerLog?.log(.gpsOff, reason: reason)
+    }
+
+    private func startPedometer() {
+        guard pedometerTask == nil else { return }
         let steps = motion.pedometer(from: startDate)
-        tasks.append(Task { [weak self] in
+        pedometerTask = Task { [weak self] in
             for await p in steps { self?.pedo.append(p); self?.filter.pedometer(p) }
-        })
-        tasks.append(Task { [weak self] in
+        }
+    }
+
+    private func startTick() {
+        guard tickTask == nil else { return }
+        tickTask = Task { [weak self] in
             while !Task.isCancelled {
                 self?.publish()
+                self?.checkPauseTimeout()
                 self?.persistDraftIfDue()
                 try? await Task.sleep(for: .seconds(1))
             }
-        })
+        }
+    }
+
+    /// Turns GPS off once a pause has lasted `gpsOffAfterPause`. Called every second.
+    func checkPauseTimeout() {
+        guard state == .paused, gpsOn, let p = pauseStarted,
+              clock.now().timeIntervalSince(p) >= Self.gpsOffAfterPause else { return }
+        stopLocation(reason: "pause timeout")
     }
 
     func pause() {
@@ -108,15 +156,25 @@ final class WorkoutRecorder {
         filter.resume()
         state = .recording
         closedAt = nil
+        startLocation(reason: "resume")
+        startPedometer()
+        startTick()
         publish()
         persistDraft()
     }
 
     func finish() -> RecordingResult {
-        if state == .paused { resume() }
         let end = clock.now()
+        if state == .paused {
+            // Close the pause without turning GPS back on.
+            if let p = pauseStarted { pausedTotal += end.timeIntervalSince(p) }
+            pauseStarted = nil
+            closedAt = nil
+        }
         state = .finished
-        tasks.forEach { $0.cancel() }; tasks.removeAll()
+        for t in [locationTask, activityTask, pedometerTask, tickTask] { t?.cancel() }
+        locationTask = nil; activityTask = nil; pedometerTask = nil; tickTask = nil
+        if gpsOn { gpsOn = false; powerLog?.log(.gpsOff, reason: "finish") }
         location.stop(); motion.stop()
         publish()
         return Self.buildResult(kind: kind, start: startDate, end: end, movingSeconds: movingTime(at: end),
@@ -143,13 +201,15 @@ final class WorkoutRecorder {
         if Date().timeIntervalSince(lastDraftWrite) >= 10 { persistDraft() }
     }
 
-    /// Rebuilds a recorder from a draft and starts its sources.
+    /// Rebuilds a recorder from a draft. A recording restored paused keeps GPS off until `resume()`.
     /// `paused`: come back paused, the pause starting when the draft was saved (or its own pause).
     /// Otherwise resume recording, leaving the `gap` since the save out of moving time.
     static func restore(_ d: RecordingDraft, location: LocationSource, motion: MotionSource, clock: RecordingClock,
-                        paused: Bool, gap: TimeInterval, draftStore: RecordingDraftStore? = nil) -> WorkoutRecorder {
+                        paused: Bool, gap: TimeInterval, draftStore: RecordingDraftStore? = nil,
+                        powerLog: PowerLog? = nil) -> WorkoutRecorder {
         let r = WorkoutRecorder(location: location, motion: motion, clock: clock)
         r.draftStore = draftStore
+        r.powerLog = powerLog
         r.kind = d.kind
         r.startDate = d.startDate
         r.points = d.points
@@ -175,7 +235,12 @@ final class WorkoutRecorder {
             r.filter.resume()
             r.resumePending = true
         }
-        r.startSources()
+        if paused {
+            // GPS and motion stay off until the user resumes.
+            r.startTick()
+        } else {
+            r.startSources(reason: "restore")
+        }
         r.publish()
         r.persistDraft()
         return r

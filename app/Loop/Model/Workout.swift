@@ -20,6 +20,9 @@ final class Workout {
     var healthKitID: UUID?
     var placeName: String?
     var cityName: String?
+    /// "recorded" (GPS, or a check-in with `isCheckIn`) or "motion" (picked up from motion history).
+    var source: String = "recorded"
+    var floors: Int? = nil
 
     init(kind: ActivityKind, startDate: Date, endDate: Date, movingSeconds: Double,
          distanceMeters: Double, name: String = "", nameReason: String = "", isCheckIn: Bool = false,
@@ -39,6 +42,8 @@ final class Workout {
     }
 
     var kind: ActivityKind { ActivityKind(rawValue: kindRaw) ?? .run }
+    /// Logged by itself from the iPhone's motion record; no route.
+    var isDetected: Bool { source == "motion" }
 
     var route: [RoutePoint] {
         guard let routeData else { return [] }
