@@ -12,9 +12,11 @@
 		0A6980D884A362B92F472EC7 /* RouteDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B599CC7313830D0E9D65648 /* RouteDrawing.swift */; };
 		0E72E1CA068BA94208E7C534 /* Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E25D7AC6BA29A37FDC7030C /* Stats.swift */; };
 		106EBDA3A074C7578ABB396A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96800E6F035DB56EACB3D10D /* Components.swift */; };
+		188F2B731D71B7D5730F5D72 /* RecordingDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FBBBCF5EDA032778ADDD3E /* RecordingDraft.swift */; };
 		362E8D34FD5A6F3D945124D5 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752E3E40AD90F15A0E74468D /* CheckInView.swift */; };
 		3B190C9834757F1F3D7E722E /* Sources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2728260204E225FA8CC53584 /* Sources.swift */; };
 		4407E584715385AFDE64D818 /* CapabilityChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90AF4904AF789D3637A6655D /* CapabilityChecker.swift */; };
+		45AE1FE3626C0530C4F363E3 /* RecordingDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D88C6748DF711E2DDF87D8CF /* RecordingDraftTests.swift */; };
 		5E8490FD3CD05461F8C1E3B9 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D832AF4DE5482CA1E9893212 /* RootView.swift */; };
 		604A4B7CA2B5936CA2761D27 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D1B4ECB9119C5B16D57F3B /* SummaryView.swift */; };
 		66EA6679A095D5147678E08A /* CardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 215C8E8F1155B82563A568B4 /* CardRenderer.swift */; };
@@ -93,10 +95,12 @@
 		CA657A304798A996D878BAF8 /* LoopUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopUITests.swift; sourceTree = "<group>"; };
 		D1694CD456F967F44730A3A7 /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		D832AF4DE5482CA1E9893212 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		D88C6748DF711E2DDF87D8CF /* RecordingDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingDraftTests.swift; sourceTree = "<group>"; };
 		D98E2E60A1593FB604B7BFB7 /* Loop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DECA660E738021067E7917DA /* LoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopTests.swift; sourceTree = "<group>"; };
 		E41F475B41E64C1D9823D275 /* DeviceEnvironmentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEnvironmentProvider.swift; sourceTree = "<group>"; };
 		E65D618740633A798AA08957 /* CardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTests.swift; sourceTree = "<group>"; };
+		E6FBBBCF5EDA032778ADDD3E /* RecordingDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingDraft.swift; sourceTree = "<group>"; };
 		EA51B44717B6C5DEFA5729B3 /* Loop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.entitlements; sourceTree = "<group>"; };
 		EF248536F48321DC8E092A73 /* YouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouView.swift; sourceTree = "<group>"; };
 		F5CE2A74A5A7178DCFAAA09E /* ShareScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareScreen.swift; sourceTree = "<group>"; };
@@ -132,6 +136,7 @@
 				11492803E3B4F265A1879F34 /* MotionSegmenter.swift */,
 				2FFB6BC2285A52F3E5FC33D0 /* Namer.swift */,
 				78D4593136A766A1C4085A1D /* PlaceResolver.swift */,
+				E6FBBBCF5EDA032778ADDD3E /* RecordingDraft.swift */,
 				AB779E0681A3F91971A6D218 /* SolarCalculator.swift */,
 				2728260204E225FA8CC53584 /* Sources.swift */,
 				9E25D7AC6BA29A37FDC7030C /* Stats.swift */,
@@ -232,6 +237,7 @@
 				E65D618740633A798AA08957 /* CardTests.swift */,
 				787F4BCE2D89FA13B88BE5AB /* DistanceFilterTests.swift */,
 				DECA660E738021067E7917DA /* LoopTests.swift */,
+				D88C6748DF711E2DDF87D8CF /* RecordingDraftTests.swift */,
 			);
 			path = LoopTests;
 			sourceTree = "<group>";
@@ -377,6 +383,7 @@
 				F6B27B54B2A36F1B89458F60 /* MotionSegmenter.swift in Sources */,
 				7D31A7640A0BA9EE9F8FDDE5 /* Namer.swift in Sources */,
 				798261209443B8337CA307DD /* PlaceResolver.swift in Sources */,
+				188F2B731D71B7D5730F5D72 /* RecordingDraft.swift in Sources */,
 				D94EBE74A0CF242C06CB22F1 /* RecordingView.swift in Sources */,
 				5E8490FD3CD05461F8C1E3B9 /* RootView.swift in Sources */,
 				0A6980D884A362B92F472EC7 /* RouteDrawing.swift in Sources */,
@@ -401,6 +408,7 @@
 				A7BE1A0D78E8245504452613 /* CardTests.swift in Sources */,
 				088FF79B3418E374A1331DBD /* DistanceFilterTests.swift in Sources */,
 				ABB1FEA21AD769E589A7309E /* LoopTests.swift in Sources */,
+				45AE1FE3626C0530C4F363E3 /* RecordingDraftTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -12,19 +12,19 @@ struct LocationFix: Sendable {
     var isStationary: Bool?
 }
 
-enum MotionActivity: String, Sendable { case running, walking, stationary, other }
-enum MotionConfidence: Int, Sendable, Comparable {
+enum MotionActivity: String, Codable, Sendable { case running, walking, stationary, other }
+enum MotionConfidence: Int, Codable, Sendable, Comparable {
     case low = 0, medium = 1, high = 2
     static func < (a: Self, b: Self) -> Bool { a.rawValue < b.rawValue }
 }
 
-struct MotionSample: Sendable {
+struct MotionSample: Codable, Sendable, Equatable {
     var time: Date
     var activity: MotionActivity
     var confidence: MotionConfidence
 }
 
-struct PedometerSample: Sendable {
+struct PedometerSample: Codable, Sendable, Equatable {
     var time: Date
     var steps: Int
     /// steps per minute
@@ -46,10 +46,14 @@ protocol MotionSource: AnyObject {
 
 /// Virtual clock so replays at N times speed still produce real-looking times.
 final class RecordingClock: @unchecked Sendable {
-    let origin = Date()
+    let origin: Date
     let scale: Double
-    init(scale: Double = 1) { self.scale = scale }
-    func now() -> Date { origin.addingTimeInterval(Date().timeIntervalSince(origin) * scale) }
+    /// `origin` lets a restored replay continue at or after the time it was saved.
+    init(scale: Double = 1, origin: Date = Date()) { self.scale = scale; self.origin = origin }
+    func now() -> Date {
+        origin.addingTimeInterval(Date().timeIntervalSince(started) * scale)
+    }
+    private let started = Date()
 }
 
 // MARK: Live

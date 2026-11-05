@@ -48,6 +48,11 @@ struct RecordingView: View {
             Text(Format.duration(recorder.movingSeconds))
                 .font(Theme.number(76)).foregroundStyle(Theme.paper).padding(.top, 4)
                 .accessibilityIdentifier("liveTime")
+            if let closed = recorder.closedAt {
+                Text("Loop closed at \(closed.formatted(date: .omitted, time: .shortened)). Resume, or hold to stop.")
+                    .font(.system(size: 13)).foregroundStyle(Theme.dim).padding(.top, 2)
+                    .accessibilityIdentifier("restoredNote")
+            }
             HStack {
                 StatCell(value: Format.km(recorder.distanceMeters), unit: "km", size: 28)
                     .accessibilityElement(children: .combine).accessibilityIdentifier("liveDistance")
@@ -85,6 +90,8 @@ struct RecordingView: View {
         Task {
             let w = await WorkoutStore.save(result, in: ctx, usePlaces: usePlaces,
                                             saveToHealth: saveToHealth && LaunchOptions.healthAllowed)
+            // Only now is the workout safe; until here a relaunch can still restore it.
+            recorder.draftStore?.clear()
             onSaved(w)
         }
     }

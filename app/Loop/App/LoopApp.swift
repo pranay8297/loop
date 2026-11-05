@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct LoopApp: App {
     let container: ModelContainer
+    @State private var session: Session
 
     init() {
         let args = ProcessInfo.processInfo.arguments
@@ -13,11 +14,17 @@ struct LoopApp: App {
         }
         let config = ModelConfiguration(isStoredInMemoryOnly: inMemory)
         container = try! ModelContainer(for: Workout.self, configurations: config)
+        if args.contains("-LoopDraftTest") && args.contains("-LoopClearDraft") { RecordingDraftStore.shared?.clear() }
+        // Restore at launch, not when a view appears: after a background relaunch by Core Location
+        // the location session must be recreated immediately.
+        let s = Session()
+        s.restoreDraft(context: container.mainContext)
+        _session = State(initialValue: s)
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(session: session)
                 .preferredColorScheme(.dark)
                 .tint(Theme.paper)
         }
@@ -44,13 +51,22 @@ enum LaunchOptions {
 
     @MainActor
     static func makeRecorder() -> WorkoutRecorder {
+        let (loc, mot, clock) = makeSources(origin: Date())
+        let r = WorkoutRecorder(location: loc, motion: mot, clock: clock)
+        r.draftStore = RecordingDraftStore.shared
+        return r
+    }
+
+    /// Sources and clock for a recorder. `origin` is where the clock starts (a restored replay
+    /// continues from its saved time).
+    static func makeSources(origin: Date) -> (LocationSource, MotionSource, RecordingClock) {
         #if DEBUG
         if isReplay {
-            let clock = RecordingClock(scale: replaySpeed)
+            let clock = RecordingClock(scale: replaySpeed, origin: origin)
             let feed = ReplayFeed(clock: clock)
-            return WorkoutRecorder(location: feed, motion: feed, clock: clock)
+            return (feed, feed, clock)
         }
         #endif
-        return WorkoutRecorder(location: LiveLocationSource(), motion: LiveMotionSource())
+        return (LiveLocationSource(), LiveMotionSource(), RecordingClock())
     }
 }

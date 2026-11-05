@@ -41,6 +41,46 @@ final class LoopUITests: XCTestCase {
         XCTAssertFalse(name.label.isEmpty)
     }
 
+    private func km(_ e: XCUIElement) -> Double {
+        Double(e.label.split(separator: ",").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+    }
+
+    /// A recording survives the app being killed and comes back on relaunch.
+    func testRecordingSurvivesTermination() throws {
+        let a = app(["-LoopDraftTest", "-LoopClearDraft"])
+        a.launch()
+        a.buttons["sport-run"].tap()
+        let start = a.buttons["startButton"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+
+        var distance = a.descendants(matching: .any)["liveDistance"]
+        XCTAssertTrue(distance.waitForExistence(timeout: 10))
+        var before = 0.0
+        let deadline = Date().addingTimeInterval(60)
+        while Date() < deadline {
+            before = km(distance)
+            if before > 0.3 { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTAssertGreaterThan(before, 0.3)
+        // The draft is written every 10 s, so after 11 s it holds at least what we read.
+        Thread.sleep(forTimeInterval: 11)
+        a.terminate()
+
+        let b = app(["-LoopDraftTest"])
+        b.launch()
+        distance = b.descendants(matching: .any)["liveDistance"]
+        XCTAssertTrue(distance.waitForExistence(timeout: 10), "recording screen should be back")
+        XCTAssertFalse(b.buttons["startButton"].isHittable)
+        XCTAssertGreaterThanOrEqual(km(distance), before)
+
+        let hold = b.descendants(matching: .any)["holdToStop"]
+        XCTAssertTrue(hold.exists)
+        hold.press(forDuration: 1.6)
+        XCTAssertTrue(b.descendants(matching: .any)["savedPill"].waitForExistence(timeout: 10))
+    }
+
     func testSwimCheckIn() throws {
         let a = app()
         a.launch()

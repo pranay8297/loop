@@ -30,6 +30,12 @@ final class WorkoutRecorder {
     private(set) var mode: MoveKind = .run
     private(set) var liveRoute: [RoutePoint] = []
     private(set) var liveModes: [MoveKind] = []
+    /// When the app was closed, for a recording restored in the paused state. Cleared on resume.
+    private(set) var closedAt: Date?
+
+    /// Where drafts go. Nil disables drafts (tests, fresh-store UI tests).
+    @ObservationIgnored var draftStore: RecordingDraftStore?
+    @ObservationIgnored private var lastDraftWrite: Date = .distantPast
 
     @ObservationIgnored let clock: RecordingClock
     @ObservationIgnored private let location: LocationSource
@@ -59,6 +65,11 @@ final class WorkoutRecorder {
         startDate = clock.now()
         filter = DistanceFilter(kind: kind, start: startDate)
         state = .recording
+        startSources()
+        persistDraft()
+    }
+
+    private func startSources() {
         let loc = location.fixes()
         tasks.append(Task { [weak self] in
             for await fix in loc { self?.ingest(fix) }
@@ -74,6 +85,7 @@ final class WorkoutRecorder {
         tasks.append(Task { [weak self] in
             while !Task.isCancelled {
                 self?.publish()
+                self?.persistDraftIfDue()
                 try? await Task.sleep(for: .seconds(1))
             }
         })
@@ -85,6 +97,7 @@ final class WorkoutRecorder {
         pauseStarted = clock.now()
         filter.pause()
         publish()
+        persistDraft()
     }
 
     func resume() {
@@ -94,7 +107,9 @@ final class WorkoutRecorder {
         resumePending = true
         filter.resume()
         state = .recording
+        closedAt = nil
         publish()
+        persistDraft()
     }
 
     func finish() -> RecordingResult {
@@ -104,17 +119,90 @@ final class WorkoutRecorder {
         tasks.forEach { $0.cancel() }; tasks.removeAll()
         location.stop(); motion.stop()
         publish()
-        let samples = segmenterSamples()
+        return Self.buildResult(kind: kind, start: startDate, end: end, movingSeconds: movingTime(at: end),
+                                cum: cum, points: points, motionSamples: motionSamples, pedo: pedo)
+    }
+
+    // MARK: drafts
+
+    /// A snapshot of everything needed to rebuild this recording.
+    func draft() -> RecordingDraft {
+        RecordingDraft(kind: kind, startDate: startDate, pausedTotal: pausedTotal, pauseStarted: pauseStarted,
+                       wasPaused: state == .paused, savedAt: clock.now(), points: points, modes: modes,
+                       motionSamples: motionSamples, pedo: pedo, cum: cum)
+    }
+
+    /// Writes the draft now (encoded and written off the main thread).
+    func persistDraft() {
+        guard let store = draftStore, state == .recording || state == .paused else { return }
+        lastDraftWrite = Date()
+        store.save(draft())
+    }
+
+    private func persistDraftIfDue() {
+        if Date().timeIntervalSince(lastDraftWrite) >= 10 { persistDraft() }
+    }
+
+    /// Rebuilds a recorder from a draft and starts its sources.
+    /// `paused`: come back paused, the pause starting when the draft was saved (or its own pause).
+    /// Otherwise resume recording, leaving the `gap` since the save out of moving time.
+    static func restore(_ d: RecordingDraft, location: LocationSource, motion: MotionSource, clock: RecordingClock,
+                        paused: Bool, gap: TimeInterval, draftStore: RecordingDraftStore? = nil) -> WorkoutRecorder {
+        let r = WorkoutRecorder(location: location, motion: motion, clock: clock)
+        r.draftStore = draftStore
+        r.kind = d.kind
+        r.startDate = d.startDate
+        r.points = d.points
+        r.modes = d.modes
+        r.motionSamples = d.motionSamples
+        r.pedo = d.pedo
+        r.cum = d.cum
+        r.pausedTotal = d.pausedTotal
+        r.lastAccepted = d.points.last
+        if let m = d.modes.last { r.mode = m } else { r.mode = d.kind == .walk ? .walk : .run }
+        r.filter = DistanceFilter(kind: d.kind, start: d.startDate)
+        for p in d.pedo { r.filter.pedometer(p) }
+        if paused {
+            r.state = .paused
+            r.pauseStarted = d.pauseStarted ?? d.savedAt
+            r.closedAt = d.savedAt
+            r.filter.pause()
+        } else {
+            // Time the app was not running is not moving time.
+            if let p = d.pauseStarted { r.pausedTotal += max(0, d.savedAt.timeIntervalSince(p)) }
+            r.pausedTotal += max(0, gap)
+            r.state = .recording
+            r.filter.resume()
+            r.resumePending = true
+        }
+        r.startSources()
+        r.publish()
+        r.persistDraft()
+        return r
+    }
+
+    /// The workout a draft describes, ending when it was saved. Used to auto-save old drafts.
+    static func result(from d: RecordingDraft) -> RecordingResult {
+        var paused = d.pausedTotal
+        if let p = d.pauseStarted { paused += max(0, d.savedAt.timeIntervalSince(p)) }
+        let moving = max(0, d.savedAt.timeIntervalSince(d.startDate) - paused)
+        return buildResult(kind: d.kind, start: d.startDate, end: d.savedAt, movingSeconds: moving, cum: d.cum,
+                           points: d.points, motionSamples: d.motionSamples, pedo: d.pedo)
+    }
+
+    private static func buildResult(kind: ActivityKind, start: Date, end: Date, movingSeconds: Double, cum: Double,
+                                    points: [RoutePoint], motionSamples: [MotionSample],
+                                    pedo: [PedometerSample]) -> RecordingResult {
         let segs: [MoveSegment]
         switch kind {
-        case .run: segs = MotionSegmenter.segments(samples)
+        case .run: segs = MotionSegmenter.segments(segmenterSamples(points: points, motionSamples: motionSamples, pedo: pedo))
         case .walk:
             if let f = points.first, let l = points.last, l.cumMeters > 0 {
                 segs = [MoveSegment(kind: .walk, startMeters: 0, endMeters: l.cumMeters, startTime: f.t, endTime: l.t)]
             } else { segs = [] }
         default: segs = []
         }
-        return RecordingResult(kind: kind, start: startDate, end: end, movingSeconds: movingTime(at: end),
+        return RecordingResult(kind: kind, start: start, end: end, movingSeconds: movingSeconds,
                                distanceMeters: cum, steps: pedo.last?.steps, route: points, segments: segs)
     }
 
@@ -159,7 +247,8 @@ final class WorkoutRecorder {
         return MotionSegmenter.vote(s, previous: mode) ?? mode
     }
 
-    private func segmenterSamples() -> [SegmenterSample] {
+    private static func segmenterSamples(points: [RoutePoint], motionSamples: [MotionSample],
+                                         pedo: [PedometerSample]) -> [SegmenterSample] {
         var mi = 0, pi = 0
         var out: [SegmenterSample] = []
         for p in points where !p.isPaused {
