@@ -48,6 +48,7 @@ struct RouteInk: View {
     var width: CGFloat = 4
     var showFinish = true
     var shadow = false
+    var finishColor: Color = Theme.accent
 
     var body: some View {
         Canvas { ctx, _ in
@@ -63,7 +64,7 @@ struct RouteInk: View {
             }
             if showFinish, let end = pieces.last?.points.last {
                 let r = width * 1.4
-                ctx.fill(Path(ellipseIn: CGRect(x: end.x - r, y: end.y - r, width: 2 * r, height: 2 * r)), with: .color(Theme.accent))
+                ctx.fill(Path(ellipseIn: CGRect(x: end.x - r, y: end.y - r, width: 2 * r, height: 2 * r)), with: .color(finishColor))
             }
         }
         .allowsHitTesting(false)

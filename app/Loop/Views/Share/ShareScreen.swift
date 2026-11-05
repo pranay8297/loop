@@ -15,6 +15,7 @@ struct ShareScreen: View {
     @Environment(\.modelContext) private var ctx
     @AppStorage("shareStyle") private var styleRaw = CardStyle.city.rawValue
     @AppStorage("shareHideEnds") private var hide = true
+    @AppStorage("cityTone") private var toneRaw = CityTone.dark.rawValue
     @State private var data: CardData?
     @State private var snaps: [CardStyle: MapSnap] = [:]
     @State private var photo: UIImage?
@@ -24,6 +25,7 @@ struct ShareScreen: View {
     @State private var busy = false
 
     private var style: CardStyle { CardStyle(rawValue: styleRaw) ?? .city }
+    private var tone: CityTone { CityTone(rawValue: toneRaw) ?? .dark }
     private var styleBinding: Binding<CardStyle> { Binding(get: { style }, set: { styleRaw = $0.rawValue }) }
 
     var body: some View {
@@ -64,7 +66,7 @@ struct ShareScreen: View {
         let history = CardRenderer.history(in: ctx)
         let d = CardData(workout: workout, history: history)
         data = d
-        for s in [CardStyle.city, .photo] {
+        for s in [CardStyle.city, .photo] where CardRenderer.needsSnapshot(s, data: d) {
             if let snap = await CardRenderer.snapshot(for: d, style: s) { snaps[s] = snap }
         }
     }
@@ -88,7 +90,7 @@ struct ShareScreen: View {
     private func preview(_ s: CardStyle, _ d: CardData) -> some View {
         GeometryReader { g in
             let k = min(g.size.width / CardText.cardSize.width, g.size.height / CardText.cardSize.height)
-            ShareCard(style: s, data: d, hide: hide, snap: snaps[s], photo: s == .photo ? photo : nil)
+            ShareCard(style: s, data: d, hide: hide, snap: snaps[s], photo: s == .photo ? photo : nil, cityTone: tone)
                 .clipShape(RoundedRectangle(cornerRadius: 14 / max(k, 0.01)))
                 .scaleEffect(k, anchor: .topLeading)
                 .frame(width: CardText.cardSize.width * k, height: CardText.cardSize.height * k, alignment: .topLeading)
@@ -126,6 +128,15 @@ struct ShareScreen: View {
                 .tint(Theme.accent)
                 .accessibilityIdentifier("hideEndsToggle")
             }
+            if style == .city, data?.packCity != nil {
+                HStack(spacing: 6) {
+                    ForEach(CityTone.allCases) { t in
+                        Button(t.title) { withAnimation(.easeInOut(duration: 0.2)) { toneRaw = t.rawValue } }
+                            .buttonStyle(ChipStyle(selected: t == tone))
+                            .accessibilityIdentifier("cityTone-\(t.rawValue)")
+                    }
+                }
+            }
             if style == .photo {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     Label(photo == nil ? "Choose photo" : "Change photo", systemImage: "photo")
@@ -153,10 +164,10 @@ struct ShareScreen: View {
     private func image() async -> UIImage? {
         guard let data else { return nil }
         var snap = snaps[style]
-        if style == .city || (style == .photo && photo == nil), snap == nil {
+        if CardRenderer.needsSnapshot(style, data: data, photo: style == .photo ? photo : nil), snap == nil {
             snap = await CardRenderer.snapshot(for: data, style: style, timeout: 4)
         }
-        return CardRenderer.render(style, data: data, hide: hide, snap: snap, photo: style == .photo ? photo : nil)
+        return CardRenderer.render(style, data: data, hide: hide, snap: snap, photo: style == .photo ? photo : nil, cityTone: tone)
     }
 
     private func share() async {

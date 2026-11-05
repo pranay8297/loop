@@ -71,6 +71,8 @@ struct CardData {
     var route: [RoutePoint]
     var segments: [MoveSegment]
     var history: [DayEntry]
+    /// Landmark pack city around the route midpoint, if any.
+    var packCity: PackCity?
 
     init(workout w: Workout, history: [DayEntry] = []) {
         id = w.id
@@ -82,6 +84,7 @@ struct CardData {
         route = w.route
         segments = w.segments
         coordinate = RouteGeometry.midpoint(route).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
+        packCity = coordinate.flatMap { CityPack.shared.match($0) }
         name = w.name.isEmpty ? place : w.name
         km = Format.km(w.distanceMeters)
         distanceKm = w.distanceMeters / 1000
@@ -116,6 +119,13 @@ struct CardData {
     func pieces(hide: Bool) -> [RoutePiece] { CardRoute.pieces(route, segments: segments, hide: hide) }
 }
 
+/// Tone of the landmark City card.
+enum CityTone: String, CaseIterable, Identifiable {
+    case dark, light
+    var id: String { rawValue }
+    var title: String { self == .dark ? "Dark" : "Light" }
+}
+
 private extension String { var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) } }
 
 // MARK: Card host
@@ -126,11 +136,12 @@ struct ShareCard: View {
     var hide = true
     var snap: MapSnap?
     var photo: UIImage?
+    var cityTone: CityTone = .dark
 
     var body: some View {
         Group {
             switch style {
-            case .city: CityCard(data: data, hide: hide, snap: snap)
+            case .city: CityCard(data: data, hide: hide, snap: snap, tone: cityTone)
             case .line: LineCard(data: data, hide: hide)
             case .photo: PhotoCard(data: data, hide: hide, snap: snap, photo: photo)
             case .bib: BibCard(data: data)
@@ -210,11 +221,20 @@ struct CityCard: View {
     let data: CardData
     var hide: Bool
     var snap: MapSnap?
+    var tone: CityTone = .dark
 
     /// Where the route sits on the card; the snapshot is requested with the same box.
     static let routeBox = CGRect(x: 30, y: 230, width: 300, height: 210)
 
     var body: some View {
+        if let city = data.packCity {
+            LandmarkCityCard(data: data, city: city, hide: hide, tone: tone)
+        } else {
+            mapCard
+        }
+    }
+
+    private var mapCard: some View {
         ZStack(alignment: .topLeading) {
             Theme.ink
             if let snap {
@@ -261,6 +281,66 @@ struct CityCard: View {
             s.project(c)
         }) } ?? RouteInk.fitted(pieces, in: Self.routeBox)
         RouteInk(pieces: drawn, color: Theme.paper, width: 1.3 * cq, showFinish: !drawn.isEmpty)
+    }
+}
+
+/// City card for pack cities: local name, route without a map, landmark skyline.
+private struct LandmarkCityCard: View {
+    let data: CardData
+    let city: PackCity
+    var hide: Bool
+    var tone: CityTone
+
+    static let routeBox = CGRect(x: 14 * cq, y: 49 * cq, width: 72 * cq, height: 46 * cq)
+    private static let skyTop = 100 * cq
+    private static let skyScale = W / 200   // 1.8 pt per pack unit
+    private static let lightAccent = Color(red: 0x2F / 255, green: 0x54 / 255, blue: 0xFF / 255)
+
+    private var bg: Color { tone == .dark ? Theme.ink : Theme.paper }
+    private var fg: Color { tone == .dark ? Theme.paper : Theme.ink }
+    private var dot: Color { tone == .dark ? Theme.accent : Self.lightAccent }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            bg
+            skyline
+            let drawn = RouteInk.fitted(data.pieces(hide: hide), in: Self.routeBox, padding: Self.routeBox.width * 0.06)
+            RouteInk(pieces: drawn, color: fg, width: 1.2 * cq, showFinish: !drawn.isEmpty, finishColor: dot)
+            CardTop(color: fg, date: CardText.stamp(data.date))
+            VStack(alignment: .leading, spacing: 2.4 * cq) {
+                Text(city.local)
+                    .font(.system(size: CGFloat(city.fontScale) * cq, weight: .bold))
+                    .tracking(-0.035 * CGFloat(city.fontScale) * cq)
+                    .lineLimit(1).minimumScaleFactor(0.3)
+                    .environment(\.layoutDirection, .leftToRight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(city.subline)
+                    .font(.system(size: 2.7 * cq, weight: .semibold)).monospacedDigit()
+                    .tracking(0.12 * 2.7 * cq)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .opacity(0.55)
+            }
+            .foregroundStyle(fg)
+            .padding(.horizontal, 7 * cq).padding(.top, 15 * cq)
+            .frame(width: W, alignment: .leading)
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer()
+                BigKm(km: data.km, color: fg, size: 22 * cq)
+                LabelledStats(items: statItems(data), color: fg).padding(.top, 4 * cq)
+            }
+            .padding(.horizontal, 6 * cq).padding(.bottom, 7 * cq)
+        }
+    }
+
+    private var skyline: some View {
+        Canvas { ctx, _ in
+            let t = CGAffineTransform(translationX: 0, y: Self.skyTop).scaledBy(x: Self.skyScale, y: Self.skyScale)
+            var ground = Path(); ground.move(to: CGPoint(x: 0, y: 58)); ground.addLine(to: CGPoint(x: 200, y: 58))
+            ctx.stroke(ground.applying(t), with: .color(fg.opacity(0.3)), lineWidth: 0.8 * Self.skyScale)
+            ctx.stroke(SVGPath.parse(city.path).applying(t), with: .color(fg),
+                       style: StrokeStyle(lineWidth: 1.2 * Self.skyScale, lineCap: .round, lineJoin: .round))
+        }
+        .allowsHitTesting(false)
     }
 }
 

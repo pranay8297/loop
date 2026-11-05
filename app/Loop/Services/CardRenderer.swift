@@ -13,8 +13,14 @@ enum CardRenderer {
                                       routeBox: box, scale: scale, timeout: timeout)
     }
 
-    static func render(_ style: CardStyle, data: CardData, hide: Bool, snap: MapSnap?, photo: UIImage? = nil) -> UIImage? {
-        let renderer = ImageRenderer(content: ShareCard(style: style, data: data, hide: hide, snap: snap, photo: photo))
+    /// Whether a style needs a map snapshot. The landmark City card draws without a map.
+    static func needsSnapshot(_ style: CardStyle, data: CardData, photo: UIImage? = nil) -> Bool {
+        (style == .city && data.packCity == nil) || (style == .photo && photo == nil)
+    }
+
+    static func render(_ style: CardStyle, data: CardData, hide: Bool, snap: MapSnap?, photo: UIImage? = nil,
+                       cityTone: CityTone = .dark) -> UIImage? {
+        let renderer = ImageRenderer(content: ShareCard(style: style, data: data, hide: hide, snap: snap, photo: photo, cityTone: cityTone))
         renderer.scale = scale
         renderer.proposedSize = ProposedViewSize(CardText.cardSize)
         renderer.isOpaque = true
@@ -22,10 +28,10 @@ enum CardRenderer {
     }
 
     static func render(_ style: CardStyle, workout: Workout, history: [DayEntry], hide: Bool,
-                       photo: UIImage? = nil, timeout: Double = 10) async -> UIImage? {
+                       photo: UIImage? = nil, cityTone: CityTone = .dark, timeout: Double = 10) async -> UIImage? {
         let data = CardData(workout: workout, history: history)
-        let snap = (style == .city || (style == .photo && photo == nil)) ? await snapshot(for: data, style: style, timeout: timeout) : nil
-        return render(style, data: data, hide: hide, snap: snap, photo: photo)
+        let snap = needsSnapshot(style, data: data, photo: photo) ? await snapshot(for: data, style: style, timeout: timeout) : nil
+        return render(style, data: data, hide: hide, snap: snap, photo: photo, cityTone: cityTone)
     }
 
     /// Every workout as a Month-card day entry.
