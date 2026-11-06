@@ -30,11 +30,11 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
 }
 
 @Suite struct NudgePlannerTests {
-    @Test func usualWalkGivesNudgeAt1920() {
+    @Test func usualWalkGivesNudgeHalfAnHourBefore() {
         let now = d(2026, 11, 4, 12)
         let p = plan(history(before: now, days: 10, h: 19), now)
         let today = p.first { $0.id == "loop.nudge.2026-11-04" }
-        #expect(today?.fire == d(2026, 11, 4, 19, 20))
+        #expect(today?.fire == d(2026, 11, 4, 18, 30))
         #expect(today?.title == "Loop")
         #expect(today?.body == "You usually walk around 7 pm. A short loop?")
     }
@@ -59,9 +59,17 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
         #expect(plan(ws, now).contains { $0.id == "loop.nudge.2026-11-04" })
     }
 
-    @Test func noneAfter2130() {
+    @Test func noneAfter2300() {
         let now = d(2026, 11, 4, 12)
-        #expect(plan(history(before: now, days: 10, h: 21, mi: 20), now).isEmpty)
+        #expect(plan(history(before: now, days: 10, h: 23, mi: 40), now).isEmpty)
+    }
+
+    /// A late walker (Dubai evenings): usual 21:30, nudged at 21:00.
+    @Test func lateWalkerNudgedAtNine() {
+        let now = d(2026, 11, 4, 12)
+        let today = plan(history(before: now, days: 10, h: 21, mi: 32), now).first { $0.id == "loop.nudge.2026-11-04" }
+        #expect(today?.fire == d(2026, 11, 4, 21, 2))
+        #expect(today?.body == "You usually walk around 9:30 pm. A short loop?")
     }
 
     @Test func noneBefore7am() {
@@ -72,7 +80,7 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
 
     @Test func noneWithinTwoHoursAfterAWorkout() {
         let now = d(2026, 11, 4, 17)
-        // A 5 minute stroll (not "moved") ending at 18:05, 75 min before the 19:20 nudge.
+        // A 5 minute stroll (not "moved") ending at 18:05, 25 min before the 18:30 nudge.
         let ws = history(before: now, days: 10, h: 19) + [w(d(2026, 11, 4, 18), minutes: 5)]
         #expect(!plan(ws, now).contains { $0.id == "loop.nudge.2026-11-04" })
     }
@@ -88,7 +96,7 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
         let ws = history(before: now, days: 12, h: 19).filter { $0.start < d(2026, 11, 1, 0) }
         let today = plan(ws, now).first { $0.id == "loop.nudge.2026-11-04" }
         #expect(today?.body == NudgePlanner.quietBody)
-        #expect(today?.fire == d(2026, 11, 4, 19, 20))
+        #expect(today?.fire == d(2026, 11, 4, 18, 30))
     }
 
     @Test func quietDaysWithoutUsualTimeUses1800() {
@@ -96,7 +104,7 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
         let ws = [w(d(2026, 10, 20, 9)), w(d(2026, 10, 22, 9))]
         let today = plan(ws, now).first { $0.id == "loop.nudge.2026-11-04" }
         #expect(today?.body == NudgePlanner.quietBody)
-        #expect(today?.fire == d(2026, 11, 4, 18, 20))
+        #expect(today?.fire == d(2026, 11, 4, 18, 0))
     }
 
     @Test func noHistoryAtAllGivesNothing() {
@@ -110,8 +118,8 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
 
     @Test func runCopyWhenMostlyRuns() {
         let now = d(2026, 11, 4, 12)
-        let p = plan(history(before: now, days: 6, h: 7, kind: .run), now)
-        #expect(p.first?.body == "You usually run around 7 am. A short loop?")
+        let p = plan(history(before: now, days: 6, h: 8, kind: .run), now)
+        #expect(p.first?.body == "You usually run around 8 am. A short loop?")
     }
 
     @Test func sundayGivesOnlyTheRecap() {
@@ -185,7 +193,7 @@ private func plan(_ ws: [NudgeWorkout], _ now: Date, _ s: NudgeSettings = both, 
         for (_, fire) in delivered {
             perDay[NudgePlanner.key(cal.startOfDay(for: fire), cal), default: 0] += 1
             let m = NudgePlanner.minuteOfDay(fire, cal)
-            #expect(m >= 7 * 60 && m <= 21 * 60 + 30)
+            #expect(m >= 7 * 60 && m <= 23 * 60)
         }
         #expect(perDay.values.allSatisfy { $0 <= 1 })
         #expect(!delivered.isEmpty)

@@ -33,11 +33,13 @@ enum NudgePlanner {
     static let movedSeconds: Double = 10 * 60
     static let lookbackDays = 28
     static let minActiveDays = 5
-    static let offsetMinutes = 20
+    /// The nudge comes this long before the usual time.
+    static let leadMinutes = 30
     static let earliestMinute = 7 * 60
-    static let latestMinute = 21 * 60 + 30
+    static let latestMinute = 23 * 60
     static let afterMoveGap: TimeInterval = 2 * 3600
     static let quietDays = 3
+    /// When the quiet-days nudge fires if there is no usual time yet.
     static let quietFallbackMinute = 18 * 60
     static let recapMinute = 19 * 60
 
@@ -80,10 +82,10 @@ enum NudgePlanner {
         let minute: Int
         let body: String
         if quiet {
-            minute = (usual?.minute ?? quietFallbackMinute) + offsetMinutes
+            minute = usual.map { $0.minute - leadMinutes } ?? quietFallbackMinute
             body = quietBody
         } else if let u = usual {
-            minute = u.minute + offsetMinutes
+            minute = u.minute - leadMinutes
             body = "You usually \(verb(u.kind)) around \(clock(roundHalfHour(u.minute), locale: locale)). A short loop?"
         } else {
             return nil

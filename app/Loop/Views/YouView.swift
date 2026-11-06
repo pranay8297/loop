@@ -250,7 +250,7 @@ struct SettingsView: View {
             Toggle(isOn: $nudgesOn) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nudges").font(.system(size: 15, weight: .semibold))
-                    Text(notesDenied && nudgesOn ? Self.deniedNote : "One a day at most, only when you haven't moved by your usual time.")
+                    Text(notesDenied && nudgesOn ? Self.deniedNote : "One a day at most, a little before your usual time, only if you haven't moved yet.")
                         .font(.system(size: 12)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
             }
