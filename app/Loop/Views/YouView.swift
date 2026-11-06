@@ -185,7 +185,23 @@ struct SettingsView: View {
     @AppStorage("usePlaces") private var usePlaces = true
     @AppStorage("saveToHealth") private var saveToHealth = true
     @AppStorage(MotionHistory.enabledKey) private var autoLog = true
+    @AppStorage(NudgeScheduler.nudgesKey) private var nudgesOn = false
+    @AppStorage(NudgeScheduler.recapKey) private var recapOn = false
+    @State private var notesDenied = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var ctx
+
+    private static let deniedNote = "Notifications are off for Loop. Allow them for Loop in the Settings app."
+
+    private func notesChanged(_ on: Bool) {
+        Task {
+            if on, await NudgeScheduler.authorizationStatus() == .notDetermined {
+                _ = await NudgeScheduler.requestAuthorization()
+            }
+            notesDenied = await NudgeScheduler.authorizationStatus() == .denied
+            await NudgeScheduler.shared.replan(ctx)
+        }
+    }
 
     private var motionNote: String {
         switch CMMotionActivityManager.authorizationStatus() {
@@ -231,6 +247,28 @@ struct SettingsView: View {
             .tint(Theme.accent)
             .accessibilityIdentifier("autoLogToggle")
             Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 14)
+            Toggle(isOn: $nudgesOn) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Nudges").font(.system(size: 15, weight: .semibold))
+                    Text(notesDenied && nudgesOn ? Self.deniedNote : "One a day at most, only when you haven't moved by your usual time.")
+                        .font(.system(size: 12)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Theme.accent)
+            .accessibilityIdentifier("nudgesToggle")
+            .onChange(of: nudgesOn) { _, on in notesChanged(on) }
+            Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 14)
+            Toggle(isOn: $recapOn) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sunday recap").font(.system(size: 15, weight: .semibold))
+                    Text(notesDenied && recapOn ? Self.deniedNote : "Your week in one line, Sunday at 7 pm.")
+                        .font(.system(size: 12)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Theme.accent)
+            .accessibilityIdentifier("recapToggle")
+            .onChange(of: recapOn) { _, on in notesChanged(on) }
+            Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 14)
             NavigationLink {
                 DiagnosticsView()
             } label: {
@@ -250,6 +288,7 @@ struct SettingsView: View {
         .background(Theme.ink)
         .toolbar(.hidden, for: .navigationBar)
         }
+        .task { notesDenied = await NudgeScheduler.authorizationStatus() == .denied }
         .presentationDetents([.medium, .large])
         .presentationBackground(Theme.ink)
     }

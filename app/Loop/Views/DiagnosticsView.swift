@@ -102,6 +102,7 @@ struct DiagnosticsView: View {
         case .launch: "Opened"
         case .foreground: "Foreground"
         case .background: "Background"
+        case .refresh: "Background check"
         }
     }
 

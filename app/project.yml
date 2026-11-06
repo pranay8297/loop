@@ -35,7 +35,8 @@ targets:
         NSHealthUpdateUsageDescription: "Loop saves your workouts and routes to Apple Health."
         NSPhotoLibraryAddUsageDescription: "Loop saves your share cards to Photos."
         LSApplicationQueriesSchemes: [instagram-stories]
-        UIBackgroundModes: [location]
+        UIBackgroundModes: [location, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.pranaybindela.loop.refresh]
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

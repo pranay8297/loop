@@ -14,6 +14,11 @@ struct LoopApp: App {
         }
         let config = ModelConfiguration(isStoredInMemoryOnly: inMemory)
         container = try! ModelContainer(for: Workout.self, configurations: config)
+        if args.contains("-LoopResetNudgeAsk") {
+            for k in [NudgeScheduler.askDoneKey, NudgeScheduler.nudgesKey, NudgeScheduler.recapKey] {
+                UserDefaults.standard.removeObject(forKey: k)
+            }
+        }
         if args.contains("-LoopDraftTest") && args.contains("-LoopClearDraft") { RecordingDraftStore.shared?.clear() }
         PowerLog.shared?.prune()
         #if DEBUG
@@ -42,6 +47,9 @@ struct LoopApp: App {
                 .tint(Theme.paper)
         }
         .modelContainer(container)
+        .backgroundTask(.appRefresh(NudgeScheduler.refreshID)) { [container] in
+            await NudgeScheduler.runRefresh(container: container)
+        }
     }
 }
 

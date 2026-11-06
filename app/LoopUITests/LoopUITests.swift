@@ -275,4 +275,47 @@ final class LoopUITests: XCTestCase {
         XCTAssertTrue(b.buttons["startButton"].waitForExistence(timeout: 5))
         sleep(2); mapShot("3-start-no-data.png")
     }
+
+    /// The nudge question shows once there are a few workouts; "Not now" hides it for good.
+    func testNudgeAskCard() throws {
+        let a = app(["-LoopFakeRoutes", "6", "-LoopResetNudgeAsk"])
+        a.launch()
+        a.buttons["sport-run"].tap()
+        XCTAssertTrue(a.buttons["startButton"].waitForExistence(timeout: 5))
+        let notNow = a.buttons["nudgeNotNow"]
+        XCTAssertTrue(notNow.waitForExistence(timeout: 5))
+        XCTAssertTrue(a.staticTexts["Want a nudge on quiet days?"].exists)
+        if let dir = ProcessInfo.processInfo.environment["LOOP_SHOTS_NUDGE"] {
+            sleep(4)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent("1-start-ask-card.png"))
+        }
+        XCTAssertTrue(a.buttons["startButton"].isHittable)
+        notNow.tap()
+        XCTAssertFalse(notNow.waitForExistence(timeout: 1))
+        a.terminate()
+
+        let b = app(["-LoopFakeRoutes", "6"])
+        b.launch()
+        b.buttons["sport-run"].tap()
+        XCTAssertTrue(b.buttons["startButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(b.buttons["nudgeNotNow"].waitForExistence(timeout: 2))
+
+        b.tabBars.buttons["You"].tap()
+        b.buttons["settingsButton"].tap()
+        XCTAssertTrue(b.switches["nudgesToggle"].waitForExistence(timeout: 5))
+        XCTAssertTrue(b.switches["recapToggle"].exists)
+        if let dir = ProcessInfo.processInfo.environment["LOOP_SHOTS_NUDGE"] {
+            sleep(1)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent("2-settings.png"))
+        }
+    }
+
+    /// With no workouts the question stays away.
+    func testNudgeAskHiddenWithoutWorkouts() throws {
+        let a = app(["-LoopResetNudgeAsk"])
+        a.launch()
+        a.buttons["sport-run"].tap()
+        XCTAssertTrue(a.buttons["startButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(a.buttons["nudgeNotNow"].waitForExistence(timeout: 2))
+    }
 }

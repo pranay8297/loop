@@ -85,16 +85,24 @@ struct RootView: View {
         .task {
             WorkoutStore.correctMovingTimeOnce(ctx)
             await MotionHistory.shared.scanIfDue(ctx)
+            await NudgeScheduler.shared.replan(ctx)
+            #if DEBUG
+            if LaunchOptions.args.contains("-LoopTestNudge") { await NudgeScheduler.scheduleTestNudge(ctx) }
+            #endif
         }
         .onChange(of: phase) { _, p in
             if p == .active {
                 env.refresh()
                 PowerLog.shared?.log(.foreground)
-                Task { await MotionHistory.shared.scanIfDue(ctx) }
+                Task {
+                    await MotionHistory.shared.scanIfDue(ctx)
+                    await NudgeScheduler.shared.replan(ctx)
+                }
             }
             if p == .background {
                 session.recorder?.persistDraft()
                 PowerLog.shared?.log(.background)
+                NudgeScheduler.shared.submitRefresh()
             }
         }
     }

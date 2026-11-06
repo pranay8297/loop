@@ -10,6 +10,10 @@ struct StartView: View {
     @State private var routes: [[RoutePoint]] = []
     @State private var heat: [PersonalHeat.Cell] = []
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var ctx
+    @AppStorage(NudgeScheduler.askDoneKey) private var nudgeAskDone = false
+    @AppStorage(NudgeScheduler.nudgesKey) private var nudgesOn = false
+    @AppStorage(NudgeScheduler.recapKey) private var recapOn = false
 
     private var kind: ActivityKind { ActivityKind(rawValue: lastKindRaw) ?? .run }
     private var capability: Capability { CapabilityChecker.decide(kind: kind, env: env.env) }
@@ -48,6 +52,11 @@ struct StartView: View {
                 chips.padding(.top, 24)
                 startButton.padding(.top, 26)
                 note.padding(.top, 22)
+                if !nudgeAskDone && workouts.count >= 3 {
+                    NudgeAskCard(yes: askYes, notNow: { withAnimation { nudgeAskDone = true } })
+                        .padding(.top, 22)
+                        .transition(.opacity)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -120,6 +129,15 @@ struct StartView: View {
         }
     }
 
+    private func askYes() {
+        Task {
+            let granted = await NudgeScheduler.requestAuthorization()
+            if granted { nudgesOn = true; recapOn = true }
+            withAnimation { nudgeAskDone = true }
+            await NudgeScheduler.shared.replan(ctx)
+        }
+    }
+
     private func start() {
         if env.env.locationAuth == .notDetermined { env.requestWhenInUse() }
         let r = LaunchOptions.makeRecorder()
@@ -140,6 +158,37 @@ struct PressScale: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+/// Asked once: would a nudge on quiet days help?
+struct NudgeAskCard: View {
+    let yes: () -> Void
+    let notNow: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Want a nudge on quiet days?").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.paper)
+            Text("One a day at most, around when you usually move. Never at night.")
+                .font(.system(size: 12.5)).foregroundStyle(Theme.dim).lineSpacing(2)
+            HStack(spacing: 16) {
+                Button(action: yes) {
+                    Text("Yes").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 22).padding(.vertical, 9)
+                        .background(Capsule().fill(Theme.paper))
+                }
+                .buttonStyle(PressScale())
+                .accessibilityIdentifier("nudgeYes")
+                Button(action: notNow) {
+                    Text("Not now").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.dim)
+                }
+                .accessibilityIdentifier("nudgeNotNow")
+            }
+            .padding(.top, 8)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 18).fill(Theme.surface1))
+        .background(RoundedRectangle(cornerRadius: 18).fill(Theme.ink.opacity(0.85)))
     }
 }
 

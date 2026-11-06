@@ -43,6 +43,7 @@ enum WorkoutStore {
         ctx.insert(w)
         removeDetected(overlapping: r.start, r.end, in: ctx)
         try? ctx.save()
+        NudgeScheduler.shared.replanSoon(ctx)
 
         let route = r.route
         Task { @MainActor in
@@ -89,6 +90,7 @@ enum WorkoutStore {
         w.name = first.name; w.nameReason = "Checked in on your iPhone. It counts toward your week."
         ctx.insert(w)
         try? ctx.save()
+        NudgeScheduler.shared.replanSoon(ctx)
         if usePlaces, let loc = lastKnown {
             Task { @MainActor in
                 if let r = await PlaceResolver.resolve(location: loc), r.place != nil {
