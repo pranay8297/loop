@@ -7,12 +7,39 @@ struct StartView: View {
     @Query(sort: \Workout.startDate, order: .reverse) private var workouts: [Workout]
     @AppStorage("lastKind") private var lastKindRaw = ActivityKind.run.rawValue
     @State private var checkInKind: ActivityKind?
+    @State private var routes: [[RoutePoint]] = []
+    @State private var heat: [PersonalHeat.Cell] = []
     @Environment(\.openURL) private var openURL
 
     private var kind: ActivityKind { ActivityKind(rawValue: lastKindRaw) ?? .run }
     private var capability: Capability { CapabilityChecker.decide(kind: kind, env: env.env) }
 
     var body: some View {
+        ZStack {
+            HomeMapBackground(routes: routes, heat: heat, lastKnown: env.lastKnownLocation)
+            content
+        }
+        .background(Theme.ink)
+        .task(id: RoutesKey(count: workouts.count, latest: workouts.first?.startDate)) { await loadRoutes() }
+        .sheet(item: $checkInKind) { k in
+            CheckInView(kind: k, capability: CapabilityChecker.decide(kind: k, env: env.env),
+                        lastKnown: env.lastKnownLocation) { msg in session.toast = msg }
+        }
+    }
+
+    private struct RoutesKey: Equatable { var count: Int; var latest: Date? }
+
+    /// Decoded and binned off the main thread, only when the workouts change.
+    private func loadRoutes() async {
+        let data = workouts.filter { $0.source == "recorded" && !$0.isCheckIn }.compactMap(\.routeData)
+        let (r, h) = await Task.detached(priority: .utility) {
+            let all = data.compactMap { try? JSONDecoder().decode([RoutePoint].self, from: $0) }.filter { !$0.isEmpty }
+            return (all, PersonalHeat.counts(all))
+        }.value
+        routes = r; heat = h
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 MonoLabel(Format.dayLabel(Date()), color: Theme.dim)
@@ -24,13 +51,10 @@ struct StartView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
+            .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
-        .background(Theme.ink)
-        .sheet(item: $checkInKind) { k in
-            CheckInView(kind: k, capability: CapabilityChecker.decide(kind: k, env: env.env),
-                        lastKnown: env.lastKnownLocation) { msg in session.toast = msg }
-        }
+        .scrollContentBackground(.hidden)
     }
 
     private var greeting: String {

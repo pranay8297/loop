@@ -233,4 +233,46 @@ final class LoopUITests: XCTestCase {
         a.buttons["diagnosticsRow"].tap()
         sleep(1); shot("diagnostics.png")
     }
+
+    // MARK: Home map
+
+    private func mapShot(_ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["LOOP_SHOTS_MAP"] else { return }
+        try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name))
+    }
+
+    /// The map sits behind the Start screen and never takes a tap.
+    func testHomeMapBehindStart() throws {
+        let a = app(["-LoopFakeRoutes", "6"])
+        a.launch()
+        // The chosen sport persists between runs (a swim shows Check in), so pick Run first.
+        a.buttons["sport-run"].tap()
+        let start = a.buttons["startButton"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        XCTAssertEqual(a.staticTexts["weekCount"].label.isEmpty, false)
+        sleep(4) // tiles
+        mapShot("1-start-glow-several-routes.png")
+        XCTAssertTrue(start.isHittable)
+        a.buttons["sport-walk"].tap()
+        XCTAssertTrue(a.buttons["sport-walk"].isSelected)
+        a.buttons["sport-run"].tap()
+        a.tabBars.buttons["You"].tap()
+        a.tabBars.buttons["Start"].tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 3))
+    }
+
+    func testHomeMapOneRouteAndNoData() throws {
+        guard ProcessInfo.processInfo.environment["LOOP_SHOTS_MAP"] != nil else { throw XCTSkip("LOOP_SHOTS_MAP not set") }
+        let a = app(["-LoopFakeRoutes", "1"])
+        a.launch()
+        a.buttons["sport-run"].tap()
+        XCTAssertTrue(a.buttons["startButton"].waitForExistence(timeout: 5))
+        sleep(4); mapShot("2-start-one-route.png")
+        a.terminate()
+        let b = app()
+        b.launch()
+        b.buttons["sport-run"].tap()
+        XCTAssertTrue(b.buttons["startButton"].waitForExistence(timeout: 5))
+        sleep(2); mapShot("3-start-no-data.png")
+    }
 }
