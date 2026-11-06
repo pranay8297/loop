@@ -580,7 +580,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
           <div class="scroll">
             <div class="a-label">Thu 5 Nov</div>
             <div class="a-title">Morning</div>
-            <div class="live"><i></i><span><b id="liveN">214</b> people moving near you right now</span></div>
+            <div class="live"><i></i><span>Moved <b>4</b> of the last 7 days</span></div>
             <div class="weekcard">
               <div class="wk-top"><span class="a-label">This week</span><span class="wk-val"><b class="num" id="wkTime">1 h 55 m</b><span id="wkCount">3 workouts</span></span></div>
               <div class="wk-days" id="wkDays"></div>
@@ -756,8 +756,8 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 </section>
 
 <section class="wrap sec" aria-labelledby="togH">
-  <h2 id="togH">Together, not versus</h2>
-  <p class="lead">No leaderboards and nobody to beat. Loop puts you in a few small circles, and each circle moves as one: who showed up today, and how close the group is to its week. Nobody has to start a group or organise it. The app does that.</p>
+  <h2 id="togH">Later: together, not versus</h2>
+  <p class="lead">First, Loop is just you. If it finds its people, this comes next. No leaderboards and nobody to beat. Loop puts you in a few small circles, and each circle moves as one: who showed up today, and how close the group is to its week. Nobody has to start a group or organise it. The app does that.</p>
   <div class="smart">
     <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.8 13.2c2.5-.2 4.4 1.2 5 4"/></svg></span><h3>Friends, anywhere</h3><p>The people you invite, in Dubai, London or Toronto. One circle, one shared week, whatever the time zone.</p></article>
     <article><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.6"/><circle cx="12" cy="12" r="10" stroke-opacity=".5"/></svg></span><h3>Nearby</h3><p>Six to twelve people who move in your part of town, formed by the app and refreshed each month. Made-up names like "Kite 41", never real ones.</p></article>
@@ -773,8 +773,8 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 </section>
 
 <section class="wrap sec" aria-labelledby="mapH">
-  <h2 id="mapH">One map of the world moving</h2>
-  <p class="lead">Open Loop and the first thing you see is a map of where people move: seafronts, parks and streets glowing wherever people walk, run and ride, across the whole world. It is built from the workouts people already record, so it needs no extra permission and almost no battery.</p>
+  <h2 id="mapH">Later: one map of the world moving</h2>
+  <p class="lead">For now the map behind Start shows only your own streets, glowing brighter the more you use them. It never leaves your phone. If Loop takes off, the world layer comes on top. Open Loop and the first thing you see is a map of where people move: seafronts, parks and streets glowing wherever people walk, run and ride, across the whole world. It is built from the workouts people already record, so it needs no extra permission and almost no battery.</p>
   <div class="mapsteps" id="mapsteps"></div>
   <h3 class="sub3">Two layers</h3>
   <div class="online">
@@ -848,7 +848,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 
 <section class="wrap sec" aria-labelledby="privH">
   <h2 id="privH">A server that knows nothing about you</h2>
-  <p class="lead">Circles and the live map need a small server. It is built so it never holds personal data: no names, no phone numbers, no emails, no contacts, no routes and no precise places. If it leaked tomorrow, nobody could learn who you are or where you live.</p>
+  <p class="lead">Built and tested, then switched off: a personal Loop needs no server. When it comes back for circles, these rules hold. Circles and the live map need a small server. It is built so it never holds personal data: no names, no phone numbers, no emails, no contacts, no routes and no precise places. If it leaked tomorrow, nobody could learn who you are or where you live.</p>
   <div class="pii">
     <div><h3>On the server</h3><ul>
       <li><b>A random ID</b> your phone makes up. No sign-up, no email, no password.</li>
@@ -891,7 +891,7 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
 
 <section class="wrap sec" aria-labelledby="planH">
   <h2 id="planH">The plan</h2>
-  <p class="lead">A native iPhone app in SwiftUI plus one small server. Each step ships to your phone as soon as it works, and nothing personal ever reaches the server.</p>
+  <p class="lead">A native iPhone app in SwiftUI. Each step ships to your phone as soon as it works. For now it is just you, and everything stays on your phone.</p>
   <ol class="phases">
     <li class="done">
       <div class="ph-n"><b>01</b><span class="mono">Done</span></div>
@@ -924,49 +924,47 @@ footer.foot{padding-block:80px 48px;color:var(--fg3);font-size:13.5px;display:fl
         <li>On your phone: the clock stops when you stand still</li>
         <li>On your phone: GPS off after 3 minutes of pause</li>
         <li>On your phone: daily battery numbers and a GPS log</li>
-        <li>GPS on its own for runs and rides</li>
+        <li>Next: GPS on its own for runs and rides (location Always)</li>
         <li>Apple Watch workouts from Apple Health</li>
       </ul>
       <p class="tech mono">CMMotionActivity · CMPedometer · CLMonitor · HealthKit background delivery · MetricKit</p>
     </li>
     <li>
-      <div class="ph-n"><b>04</b><span class="mono">Then</span></div>
-      <h3>Circles and the server</h3>
+      <div class="ph-n"><b>04</b><span class="mono">Next</span></div>
+      <h3>Just you</h3>
       <ul>
-        <li>Server live: random IDs, invite links, no sign-up</li>
-        <li>Friends, nearby and same-hour circles, formed by the app</li>
-        <li>Showed-up dots, the shared week, cheers and nudges</li>
-        <li>A check on every field: is this personal data?</li>
+        <li>Your map behind Start: your streets glow the more you use them</li>
+        <li>Nudges from your own rhythm, one a day at most, never guilt</li>
+        <li>A Sunday recap of your week</li>
+        <li>Your own records: longest walk, best week, days in a row</li>
       </ul>
-      <p class="tech mono">Railway · TypeScript · Postgres · App Attest · APNs</p>
+      <p class="tech mono">On-device only · local notifications · background refresh</p>
     </li>
     <li>
-      <div class="ph-n"><b>05</b><span class="mono">Then</span></div>
-      <h3>The world map</h3>
+      <div class="ph-n"><b>05</b><span class="mono">Later</span></div>
+      <h3>Your contacts</h3>
       <ul>
-        <li>Finished workouts add cells about 150 m wide, ends left off</li>
-        <li>Five people minimum, counted once a day, tags per cell</li>
-        <li>"Moving now" pulses from people who allow Always</li>
-        <li>The home screen's background, loaded only while open</li>
+        <li>Invite friends with a link, no sign-up</li>
+        <li>One small circle: who showed up, the shared week, cheers</li>
+        <li>Server switched back on, still no personal data</li>
       </ul>
-      <p class="tech mono">H3 cells · Postgres · MapKit</p>
+      <p class="tech mono">TestFlight · Railway · Postgres · APNs</p>
     </li>
     <li>
-      <div class="ph-n"><b>06</b><span class="mono">Then</span></div>
-      <h3>Friends on board</h3>
+      <div class="ph-n"><b>06</b><span class="mono">If it takes off</span></div>
+      <h3>People around you</h3>
       <ul>
-        <li>TestFlight invites for your first circle</li>
-        <li>Lock Screen and Dynamic Island while you move</li>
-        <li>Instagram Stories in one tap</li>
+        <li>Nearby and same-hour circles, formed by the app</li>
+        <li>The world map layer, five people minimum per street</li>
       </ul>
-      <p class="tech mono">TestFlight · ActivityKit · Meta app ID</p>
+      <p class="tech mono">App Attest · geohash cells · MapKit</p>
     </li>
   </ol>
   <h3 class="sub3">Your calls</h3>
   <div class="needs">
-    <div class="need"><span class="st mono">Your call</span><div><b>Location "Always"</b><p>Optional, and expect only 5 to 6% of people to allow it. It lets GPS start on its own and adds the "moving now" layer. Without it Loop still logs every walk, run and ride, and the world map still fills from recorded workouts.</p></div></div>
-    <div class="need"><span class="st mono">Your call</span><div><b>Contacts</b><p>Recommended: invite links, so contacts never leave the phone. The other option finds contacts already on Loop, but sends scrambled phone numbers to the server.</p></div></div>
-    <div class="need"><span class="st ok mono">Live</span><div><b>Railway</b><p>One small TypeScript service and a Postgres database in Singapore, running now. Our code never logs IP addresses. Old projects cleaned up.</p></div></div>
+    <div class="need"><span class="st ok mono">Yes</span><div><b>Location "Always"</b><p>On your phone, so GPS can start on its own when you run. Optional for everyone else: without it Loop still logs every walk, run and ride, just without the route.</p></div></div>
+    <div class="need"><span class="st mono">Later</span><div><b>Contacts</b><p>Recommended: invite links, so contacts never leave the phone. The other option finds contacts already on Loop, but sends scrambled phone numbers to the server.</p></div></div>
+    <div class="need"><span class="st mono">Off</span><div><b>Railway</b><p>The server is built and tested, then switched off until circles. One deploy turns it back on. Old projects cleaned up.</p></div></div>
     <div class="need"><span class="st ok mono">Ready</span><div><b>Apple Developer Program</b><p>Signing, HealthKit and TestFlight for friends.</p></div></div>
   </div>
 </section>
