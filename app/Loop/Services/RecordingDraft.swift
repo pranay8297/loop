@@ -14,6 +14,11 @@ struct RecordingDraft: Codable, Sendable, Equatable {
     var motionSamples: [MotionSample]
     var pedo: [PedometerSample]
     var cum: Double
+    /// Auto recordings only (nil in older drafts and manual recordings).
+    var auto: Bool? = nil
+    var pedoFrom: Date? = nil
+    var stepOffset: Int? = nil
+    var meterOffset: Double? = nil
 }
 
 /// Stores one draft as JSON in Application Support. Writes are atomic and serialised.

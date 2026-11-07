@@ -187,10 +187,14 @@ struct SettingsView: View {
     @AppStorage(MotionHistory.enabledKey) private var autoLog = true
     @AppStorage(NudgeScheduler.nudgesKey) private var nudgesOn = false
     @AppStorage(NudgeScheduler.recapKey) private var recapOn = false
+    @AppStorage(AutoStart.enabledKey) private var autoStartOn = false
     @State private var notesDenied = false
+    @Environment(\.openURL) private var openURL
+    private var autoStart: AutoStart { AutoStart.shared }
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var ctx
 
+    private static let alwaysNote = "Allow location Always for Loop in the Settings app."
     private static let deniedNote = "Notifications are off for Loop. Allow them for Loop in the Settings app."
 
     private func notesChanged(_ on: Bool) {
@@ -246,6 +250,26 @@ struct SettingsView: View {
             }
             .tint(Theme.accent)
             .accessibilityIdentifier("autoLogToggle")
+            Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 14)
+            Toggle(isOn: $autoStartOn) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Start by itself").font(.system(size: 15, weight: .semibold))
+                    Text(autoStartOn && !autoStart.isAlways ? Self.alwaysNote
+                         : "Loop notices when you head out and records with the route. Needs location set to Always.")
+                        .font(.system(size: 12)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("autoStartNote")
+                }
+            }
+            .tint(Theme.accent)
+            .accessibilityIdentifier("autoStartToggle")
+            .onChange(of: autoStartOn) { _, on in Task { await autoStart.setEnabled(on) } }
+            if autoStartOn && !autoStart.isAlways {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.paper).padding(.top, 6)
+                .accessibilityIdentifier("autoStartOpenSettings")
+            }
             Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 14)
             Toggle(isOn: $nudgesOn) {
                 VStack(alignment: .leading, spacing: 2) {

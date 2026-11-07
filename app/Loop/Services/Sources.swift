@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import CoreMotion
+import UIKit
 
 struct LocationFix: Sendable {
     var lat: Double
@@ -12,7 +13,7 @@ struct LocationFix: Sendable {
     var isStationary: Bool?
 }
 
-enum MotionActivity: String, Codable, Sendable { case running, walking, stationary, other }
+enum MotionActivity: String, Codable, Sendable { case running, walking, stationary, other, automotive }
 enum MotionConfidence: Int, Codable, Sendable, Comparable {
     case low = 0, medium = 1, high = 2
     static func < (a: Self, b: Self) -> Bool { a.rawValue < b.rawValue }
@@ -65,15 +66,20 @@ class RecordingClock: @unchecked Sendable {
 // MARK: Live
 
 final class LiveLocationSource: LocationSource {
+    /// `.always` for recordings Loop started by itself (they may begin in the background).
+    let always: Bool
+    init(always: Bool = false) { self.always = always }
     private var task: Task<Void, Never>?
     private var background: CLBackgroundActivitySession?
     private var service: CLServiceSession?
 
     func fixes() -> AsyncStream<LocationFix> {
         AsyncStream { continuation in
-            // Keeps updates flowing with the screen locked (blue indicator).
-            background = CLBackgroundActivitySession()
-            service = CLServiceSession(authorization: .whenInUse)
+            // Keeps updates flowing with the screen locked (blue indicator). Apple: create it while the app
+            // is in the foreground. With Always, a recording started from a background wake does not need it.
+            let active = MainActor.assumeIsolated { UIApplication.shared.applicationState != .background }
+            if !always || active { background = CLBackgroundActivitySession() }
+            service = CLServiceSession(authorization: always ? .always : .whenInUse)
             task = Task {
                 do {
                     for try await update in CLLocationUpdate.liveUpdates(.fitness) {
@@ -107,7 +113,8 @@ final class LiveMotionSource: MotionSource {
             guard CMMotionActivityManager.isActivityAvailable() else { continuation.finish(); return }
             activityManager.startActivityUpdates(to: .main) { a in
                 guard let a else { return }
-                let kind: MotionActivity = a.running ? .running : a.walking ? .walking : a.stationary ? .stationary : .other
+                let kind: MotionActivity = a.running ? .running : a.walking ? .walking : a.automotive ? .automotive
+                    : a.stationary ? .stationary : .other
                 let conf: MotionConfidence = switch a.confidence {
                 case .high: .high
                 case .medium: .medium

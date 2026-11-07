@@ -30,6 +30,7 @@ targets:
         CFBundleShortVersionString: "0.1"
         CFBundleVersion: "1"
         NSLocationWhenInUseUsageDescription: "Loop uses your location to map your route and measure distance and pace while you record a workout."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Loop notices when you head out for a walk, run or ride and records it by itself. It wakes on low-power location changes and turns GPS on only while you move."
         NSMotionUsageDescription: "Loop uses motion and step data to tell walking from running and to count your steps."
         NSHealthShareUsageDescription: "Loop saves your workouts and routes to Apple Health."
         NSHealthUpdateUsageDescription: "Loop saves your workouts and routes to Apple Health."

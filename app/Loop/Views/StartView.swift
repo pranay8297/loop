@@ -14,6 +14,8 @@ struct StartView: View {
     @AppStorage(NudgeScheduler.askDoneKey) private var nudgeAskDone = false
     @AppStorage(NudgeScheduler.nudgesKey) private var nudgesOn = false
     @AppStorage(NudgeScheduler.recapKey) private var recapOn = false
+    @AppStorage(AutoStart.askDoneKey) private var autoAskDone = false
+    @AppStorage(AutoStart.enabledKey) private var autoStartOn = false
 
     private var kind: ActivityKind { ActivityKind(rawValue: lastKindRaw) ?? .run }
     private var capability: Capability { CapabilityChecker.decide(kind: kind, env: env.env) }
@@ -54,6 +56,12 @@ struct StartView: View {
                 note.padding(.top, 22)
                 if !nudgeAskDone && workouts.count >= 3 {
                     NudgeAskCard(yes: askYes, notNow: { withAnimation { nudgeAskDone = true } })
+                        .padding(.top, 22)
+                        .transition(.opacity)
+                } else if !autoAskDone && !autoStartOn && workouts.count >= 3 {
+                    AskCard(title: "Let Loop start by itself?",
+                            detail: "Walk, run or ride and Loop records it. GPS turns on only while you move.",
+                            id: "autoStart", yes: autoYes, notNow: { withAnimation { autoAskDone = true } })
                         .padding(.top, 22)
                         .transition(.opacity)
                 }
@@ -138,6 +146,13 @@ struct StartView: View {
         }
     }
 
+    private func autoYes() {
+        Task {
+            withAnimation { autoAskDone = true; autoStartOn = true }
+            await AutoStart.shared.setEnabled(true)
+        }
+    }
+
     private func start() {
         if env.env.locationAuth == .notDetermined { env.requestWhenInUse() }
         let r = LaunchOptions.makeRecorder()
@@ -166,9 +181,23 @@ struct NudgeAskCard: View {
     let yes: () -> Void
     let notNow: () -> Void
     var body: some View {
+        AskCard(title: "Want a nudge on quiet days?", detail: "One a day at most, around when you usually move. Never at night.",
+                id: "nudge", yes: yes, notNow: notNow)
+    }
+}
+
+/// A one-time question on Start with Yes and Not now.
+struct AskCard: View {
+    let title: String
+    let detail: String
+    /// Prefix for the button identifiers (`<id>Yes`, `<id>NotNow`).
+    let id: String
+    let yes: () -> Void
+    let notNow: () -> Void
+    var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Want a nudge on quiet days?").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.paper)
-            Text("One a day at most, around when you usually move. Never at night.")
+            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.paper)
+            Text(detail)
                 .font(.system(size: 12.5)).foregroundStyle(Theme.dim).lineSpacing(2)
             HStack(spacing: 16) {
                 Button(action: yes) {
@@ -177,11 +206,11 @@ struct NudgeAskCard: View {
                         .background(Capsule().fill(Theme.paper))
                 }
                 .buttonStyle(PressScale())
-                .accessibilityIdentifier("nudgeYes")
+                .accessibilityIdentifier("\(id)Yes")
                 Button(action: notNow) {
                     Text("Not now").font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.dim)
                 }
-                .accessibilityIdentifier("nudgeNotNow")
+                .accessibilityIdentifier("\(id)NotNow")
             }
             .padding(.top, 8)
         }

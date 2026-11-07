@@ -210,6 +210,9 @@ final class FakeMotionHistory: MotionHistoryProvider {
             .init(start: at(-1, 6, 30), kind: .walking, confidence: .high),
             .init(start: at(-1, 6, 35), kind: .running, confidence: .high),
             .init(start: at(-1, 7, 5), kind: .stationary, confidence: .high),
+            // A short stroll that is not a workout (motion record view).
+            .init(start: at(-1, 12, 0), kind: .walking, confidence: .high),
+            .init(start: at(-1, 12, 5), kind: .stationary, confidence: .high),
             .init(start: walkStart, kind: .walking, confidence: .high),
             .init(start: walkEnd, kind: .stationary, confidence: .high),
         ]

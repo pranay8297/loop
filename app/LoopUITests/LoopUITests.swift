@@ -318,4 +318,94 @@ final class LoopUITests: XCTestCase {
         XCTAssertTrue(a.buttons["startButton"].waitForExistence(timeout: 5))
         XCTAssertFalse(a.buttons["nudgeNotNow"].waitForExistence(timeout: 2))
     }
+
+    // MARK: Start by itself
+
+    private func autoShot(_ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["LOOP_SHOTS_AUTO"] else { return }
+        try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name))
+    }
+
+    /// A fake wake (8 min of walking in the motion record) starts a recording by itself; when the feed
+    /// goes quiet it stops by itself, saves, and shows in You as a recorded walk.
+    func testAutoStartWakeRecordsAndAutoStops() throws {
+        let a = app(["-LoopFakeWake", "walk", "-LoopFakeStillAfter", "6"])
+        a.launch()
+        let note = a.staticTexts["autoNote"]
+        XCTAssertTrue(note.waitForExistence(timeout: 10), "recording screen should open by itself")
+        XCTAssertEqual(note.label, "Started by itself")
+        XCTAssertTrue(a.descendants(matching: .any)["liveDistance"].exists)
+        sleep(2); autoShot("3-recording-started-by-itself.png")
+        // 5 virtual minutes of stillness at 30x is 10 s.
+        let gone = NSPredicate(format: "exists == false")
+        wait(for: [expectation(for: gone, evaluatedWith: note)], timeout: 60)
+        a.tabBars.buttons["You"].tap()
+        let rows = a.buttons.matching(identifier: "workoutRow")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertEqual(rows.count, 1)
+        let label = rows.firstMatch.label
+        XCTAssertTrue(label.contains("km"), label)
+        XCTAssertFalse(label.contains("auto"), "a recording, not a motion-record pick-up: \(label)")
+        XCTAssertTrue(label.lowercased().contains("walk"), label)
+    }
+
+    /// The ask card shows once the nudge question is done; "Not now" hides it for good.
+    func testAutoStartAskCardAndSetting() throws {
+        let a = app(["-LoopFakeRoutes", "6", "-LoopResetAutoAsk"])
+        a.launch()
+        a.buttons["sport-run"].tap()
+        XCTAssertTrue(a.buttons["startButton"].waitForExistence(timeout: 5))
+        if a.buttons["nudgeNotNow"].waitForExistence(timeout: 2) { a.buttons["nudgeNotNow"].tap() }
+        let notNow = a.buttons["autoStartNotNow"]
+        XCTAssertTrue(notNow.waitForExistence(timeout: 5))
+        XCTAssertTrue(a.staticTexts["Let Loop start by itself?"].exists)
+        XCTAssertTrue(a.buttons["autoStartYes"].exists)
+        sleep(3); autoShot("1-start-ask-card.png")
+        notNow.tap()
+        XCTAssertFalse(notNow.waitForExistence(timeout: 1))
+        a.terminate()
+
+        let b = app(["-LoopFakeRoutes", "6"])
+        b.launch()
+        b.buttons["sport-run"].tap()
+        XCTAssertTrue(b.buttons["startButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(b.buttons["autoStartNotNow"].waitForExistence(timeout: 2))
+        b.tabBars.buttons["You"].tap()
+        b.buttons["settingsButton"].tap()
+        let toggle = b.switches["autoStartToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.value as? String, "0", "off by default")
+        b.terminate()
+
+        // On, without Always (the simulator has no grant): the note says how to fix it.
+        let c = app(["-LoopFakeRoutes", "6", "-LoopAutoStartOn"])
+        c.launch()
+        c.tabBars.buttons["You"].tap()
+        c.buttons["settingsButton"].tap()
+        XCTAssertTrue(c.switches["autoStartToggle"].waitForExistence(timeout: 5))
+        let n = c.staticTexts["autoStartNote"]
+        XCTAssertTrue(n.waitForExistence(timeout: 5))
+        XCTAssertEqual(n.label, "Allow location Always for Loop in the Settings app.")
+        XCTAssertTrue(c.buttons["autoStartOpenSettings"].exists)
+        sleep(1); autoShot("2-settings.png")
+        c.terminate()
+        let d = app(["-LoopResetAutoAsk"])
+        d.launch(); d.terminate()
+    }
+
+    /// Battery and diagnostics lists motion-record stretches with outcomes.
+    func testMotionRecordSection() throws {
+        let a = app(["-LoopFakeMotionHistory", "-LoopClearDismissed"])
+        a.launch()
+        a.tabBars.buttons["You"].tap()
+        XCTAssertTrue(a.buttons.matching(identifier: "workoutRow").firstMatch.waitForExistence(timeout: 5))
+        a.buttons["settingsButton"].tap()
+        a.buttons["diagnosticsRow"].tap()
+        let rows = a.descendants(matching: .any).matching(identifier: "motionRecordRow")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 5))
+        let labels = rows.allElementsBoundByIndex.map(\.label)
+        XCTAssertTrue(labels.contains { $0.contains("too short") }, "\(labels)")
+        XCTAssertTrue(labels.contains { $0.contains("logged") }, "\(labels)")
+        sleep(1); autoShot("4-motion-record.png")
+    }
 }

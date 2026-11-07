@@ -54,6 +54,10 @@ struct RecordingView: View {
                     .font(.system(size: 13)).foregroundStyle(Theme.dim).padding(.top, 2)
                     .accessibilityIdentifier("restoredNote")
             }
+            if recorder.isAuto {
+                Text("Started by itself").font(.system(size: 13)).foregroundStyle(Theme.dim).padding(.top, 2)
+                    .accessibilityIdentifier("autoNote")
+            }
             HStack {
                 StatCell(value: Format.km(recorder.distanceMeters), unit: "km", size: 28)
                     .accessibilityElement(children: .combine).accessibilityIdentifier("liveDistance")

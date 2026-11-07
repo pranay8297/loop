@@ -4,7 +4,7 @@ import Foundation
 /// foreground / background moves. JSON lines in Application Support, kept for 14 days.
 /// It never leaves the phone and holds no coordinates.
 final class PowerLog: @unchecked Sendable {
-    enum Kind: String, Codable, Sendable { case gpsOn, gpsOff, launch, foreground, background, refresh }
+    enum Kind: String, Codable, Sendable { case gpsOn, gpsOff, launch, foreground, background, refresh, wake, autoStart, wakeIgnored }
 
     struct Event: Codable, Equatable, Sendable {
         var time: Date

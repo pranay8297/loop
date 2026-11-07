@@ -9,6 +9,59 @@ final class Session {
     var saved: Workout?
     var showingCover = false
     var toast: String?
+    /// For saves that happen without a view (auto stop). Set at launch.
+    @ObservationIgnored var context: ModelContext?
+
+    /// A recording Loop noticed by itself. Opening the app shows it live.
+    func beginAuto(kind: ActivityKind, from: Date, preroll: [PedometerSample]) {
+        guard recorder == nil else { return }
+        let r = LaunchOptions.makeRecorder(always: true)
+        r.startAuto(kind: kind, from: from, preroll: preroll)
+        attachAutoStop(r)
+        saved = nil
+        recorder = r
+        showingCover = true
+        #if DEBUG
+        if let i = LaunchOptions.args.firstIndex(of: "-LoopFakeStillAfter"), i + 1 < LaunchOptions.args.count,
+           let secs = Double(LaunchOptions.args[i + 1]) {
+            Task { [weak r] in
+                try? await Task.sleep(for: .seconds(secs))
+                r?.debugCutFeeds()
+            }
+        }
+        #endif
+    }
+
+    private func attachAutoStop(_ r: WorkoutRecorder) {
+        guard r.isAuto else { return }
+        r.onAutoStop = { [weak self, weak r] reason in
+            guard let self, let r else { return }
+            self.autoFinish(r, reason: reason)
+        }
+    }
+
+    /// Stops and saves an auto recording through the normal save. Too short: dropped quietly.
+    func autoFinish(_ r: WorkoutRecorder, reason: AutoStop.Reason) {
+        guard recorder === r, r.state == .recording else { return }
+        let raw = r.finishAuto(reason)
+        let final = AutoStop.final(raw)
+        guard let ctx = context, let result = final else {
+            r.draftStore?.clear()
+            recorder = nil; showingCover = false
+            AutoStart.shared.armHere()
+            return
+        }
+        let defaults = UserDefaults.standard
+        let usePlaces = defaults.object(forKey: "usePlaces") as? Bool ?? true
+        let health = (defaults.object(forKey: "saveToHealth") as? Bool ?? true) && LaunchOptions.healthAllowed
+        Task {
+            _ = await WorkoutStore.save(result, in: ctx, usePlaces: usePlaces, saveToHealth: health)
+            r.draftStore?.clear()
+            if recorder === r { recorder = nil; showingCover = false }
+            toast = "Saved your \(result.kind.noun)"
+            AutoStart.shared.armHere()
+        }
+    }
 
     /// Brings back a recording that was in progress when the app was closed.
     func restoreDraft(context: ModelContext) {
@@ -29,10 +82,11 @@ final class Session {
             }
         case .resume, .restorePaused:
             let paused = RestorePolicy.decide(age: age, wasPaused: d.wasPaused) == .restorePaused
-            let (loc, mot, clock) = LaunchOptions.makeSources(origin: origin)
+            let (loc, mot, clock) = LaunchOptions.makeSources(origin: origin, always: d.auto ?? false)
             recorder = WorkoutRecorder.restore(d, location: loc, motion: mot, clock: clock,
                                                paused: paused, gap: max(0, clock.now().timeIntervalSince(d.savedAt)),
                                                draftStore: store, powerLog: PowerLog.shared)
+            if let r = recorder { attachAutoStop(r) }
             saved = nil
             showingCover = true
         }

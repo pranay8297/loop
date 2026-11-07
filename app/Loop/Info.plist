@@ -32,6 +32,8 @@
 	<string>Loop saves your workouts and routes to Apple Health.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Loop saves your workouts and routes to Apple Health.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Loop notices when you head out for a walk, run or ride and records it by itself. It wakes on low-power location changes and turns GPS on only while you move.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Loop uses your location to map your route and measure distance and pace while you record a workout.</string>
 	<key>NSMotionUsageDescription</key>

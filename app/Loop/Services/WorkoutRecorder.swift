@@ -34,6 +34,16 @@ final class WorkoutRecorder {
     private(set) var closedAt: Date?
     /// Recording, not paused, and nothing has moved for longer than `MovingTime.grace`: the clock is frozen.
     private(set) var isStill = false
+    /// Started by itself (AutoStart). Only these ever stop by themselves.
+    private(set) var isAuto = false
+    /// Called once when an auto recording should stop (still, car, cap). Set by the Session.
+    @ObservationIgnored var onAutoStop: ((AutoStop.Reason) -> Void)?
+    @ObservationIgnored private var autoStopFired = false
+    /// Auto recordings: the live pedometer counts from `pedoFrom` (the GPS start); the pre-roll
+    /// steps and metres before it are added on top.
+    @ObservationIgnored private var pedoFrom: Date?
+    @ObservationIgnored private var stepOffset = 0
+    @ObservationIgnored private var meterOffset = 0.0
 
     /// Where drafts go. Nil disables drafts (tests, fresh-store UI tests).
     @ObservationIgnored var draftStore: RecordingDraftStore?
@@ -70,6 +80,33 @@ final class WorkoutRecorder {
         moving.begin(startDate)
         state = .recording
         startSources(reason: "recording start")
+        persistDraft()
+    }
+
+    /// Starts a recording Loop noticed by itself. `boutStart` is when the movement began (motion record);
+    /// `preroll` is pedometer evidence from then until now (cumulative steps and metres, every ~10 s).
+    /// Distance before GPS comes from the pedometer and the pre-roll counts as moving time.
+    func startAuto(kind: ActivityKind, from boutStart: Date, preroll: [PedometerSample]) {
+        guard state == .idle else { return }
+        isAuto = true
+        self.kind = kind
+        let now = clock.now()
+        startDate = min(boutStart, now)
+        // Fixes older than the GPS start are cached ones; ignore them.
+        filter = DistanceFilter(kind: kind, start: now)
+        moving = MovingTime()
+        moving.begin(startDate)
+        let pre = preroll.filter { $0.time >= startDate && $0.time <= now }.sorted { $0.time < $1.time }
+        for p in pre { moving.evidence(p.time) }
+        if kind != .ride {
+            for p in pre { pedo.append(p); filter.pedometer(p) }
+            stepOffset = pre.last?.steps ?? 0
+            meterOffset = pre.last?.distance ?? 0
+        }
+        cum = meterOffset
+        pedoFrom = now
+        state = .recording
+        startSources(reason: "auto start")
         persistDraft()
     }
 
@@ -119,9 +156,9 @@ final class WorkoutRecorder {
 
     private func startPedometer() {
         guard pedometerTask == nil else { return }
-        let steps = motion.pedometer(from: startDate)
+        let steps = motion.pedometer(from: pedoFrom ?? startDate)
         pedometerTask = Task { [weak self] in
-            for await p in steps { self?.ingestPedometer(p) }
+            for await p in steps { self?.ingestLivePedometer(p) }
         }
     }
 
@@ -132,6 +169,7 @@ final class WorkoutRecorder {
                 self?.publish()
                 self?.checkPauseTimeout()
                 self?.persistDraftIfDue()
+                self?.checkAutoStop()
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -143,6 +181,61 @@ final class WorkoutRecorder {
               clock.now().timeIntervalSince(p) >= Self.gpsOffAfterPause else { return }
         stopLocation(reason: "pause timeout")
     }
+
+    // MARK: auto stop
+
+    /// When the current run of automotive motion began, if the latest motion sample is automotive.
+    func automotiveSince() -> Date? {
+        var since: Date?
+        for m in motionSamples.reversed() {
+            guard m.activity == .automotive, m.confidence >= .medium else { break }
+            since = m.time
+        }
+        return since
+    }
+
+    /// Calls `onAutoStop` once when an auto recording should end. Called every second.
+    func checkAutoStop() {
+        guard isAuto, !autoStopFired, state == .recording else { return }
+        let now = clock.now()
+        guard let reason = AutoStop.check(now: now, start: startDate, lastEvidence: moving.anchor ?? now,
+                                          automotiveSince: automotiveSince()) else { return }
+        autoStopFired = true
+        onAutoStop?(reason)
+    }
+
+    /// Finishes an auto recording. Still: ends at the last movement. Car: ends where the car began,
+    /// and the route after that is dropped so the drive never adds distance.
+    func finishAuto(_ reason: AutoStop.Reason) -> RecordingResult {
+        let cut: Date? = switch reason {
+        case .still: moving.anchor
+        case .car: automotiveSince()
+        case .cap: nil
+        }
+        let full = finish(reason: "auto stop: \(reason.rawValue)")
+        guard let cut, cut > startDate, cut < full.end else { return full }
+        let kept = points.filter { $0.t <= cut }
+        let keptPedo = pedo.filter { $0.time <= cut }
+        var moved = full.movingSeconds
+        if reason == .car {
+            let replay = MovingTime.replay(start: startDate, end: cut, points: kept, pedo: keptPedo,
+                                           usesSteps: kind != .ride).total
+            moved = min(moved, replay)
+        }
+        let dist = kept.last(where: { !$0.isPaused })?.cumMeters ?? kept.last?.cumMeters ?? (reason == .car ? meterOffset : cum)
+        return Self.buildResult(kind: kind, start: startDate, end: cut, movingSeconds: moved,
+                                cum: min(cum, max(dist, meterOffset)), points: kept,
+                                motionSamples: motionSamples.filter { $0.time <= cut }, pedo: keptPedo)
+    }
+
+    #if DEBUG
+    /// UI tests: stop feeding GPS and steps without changing state, as if he stood still.
+    func debugCutFeeds() {
+        locationTask?.cancel(); locationTask = nil
+        pedometerTask?.cancel()
+        location.stop(); motion.stop()
+    }
+    #endif
 
     func pause() {
         guard state == .recording else { return }
@@ -170,7 +263,7 @@ final class WorkoutRecorder {
         persistDraft()
     }
 
-    func finish() -> RecordingResult {
+    func finish(reason: String = "finish") -> RecordingResult {
         let end = clock.now()
         if state == .paused {
             // Close the pause without turning GPS back on.
@@ -182,7 +275,7 @@ final class WorkoutRecorder {
         state = .finished
         for t in [locationTask, activityTask, pedometerTask, tickTask] { t?.cancel() }
         locationTask = nil; activityTask = nil; pedometerTask = nil; tickTask = nil
-        if gpsOn { gpsOn = false; powerLog?.log(.gpsOff, reason: "finish") }
+        if gpsOn { gpsOn = false; powerLog?.log(.gpsOff, reason: reason) }
         location.stop(); motion.stop()
         publish()
         return Self.buildResult(kind: kind, start: startDate, end: end, movingSeconds: min(moving.total, movingTime(at: end)),
@@ -195,7 +288,9 @@ final class WorkoutRecorder {
     func draft() -> RecordingDraft {
         RecordingDraft(kind: kind, startDate: startDate, pausedTotal: pausedTotal, pauseStarted: pauseStarted,
                        wasPaused: state == .paused, savedAt: clock.now(), points: points, modes: modes,
-                       motionSamples: motionSamples, pedo: pedo, cum: cum)
+                       motionSamples: motionSamples, pedo: pedo, cum: cum,
+                       auto: isAuto ? true : nil, pedoFrom: pedoFrom,
+                       stepOffset: isAuto ? stepOffset : nil, meterOffset: isAuto ? meterOffset : nil)
     }
 
     /// Writes the draft now (encoded and written off the main thread).
@@ -220,6 +315,10 @@ final class WorkoutRecorder {
         r.powerLog = powerLog
         r.kind = d.kind
         r.startDate = d.startDate
+        r.isAuto = d.auto ?? false
+        r.pedoFrom = d.pedoFrom
+        r.stepOffset = d.stepOffset ?? 0
+        r.meterOffset = d.meterOffset ?? 0
         r.points = d.points
         r.modes = d.modes
         r.motionSamples = d.motionSamples
@@ -294,6 +393,8 @@ final class WorkoutRecorder {
     }
 
     func ingest(_ fix: LocationFix) {
+        // An auto recording that went quiet while the app was suspended ends before late evidence lands.
+        if isAuto { checkAutoStop() }
         guard state == .recording || state == .paused else { return }
         let decision = filter.fix(fix)
         if state == .recording {
@@ -347,7 +448,18 @@ final class WorkoutRecorder {
         return out
     }
 
+    /// A sample from the live pedometer stream; auto recordings add the pre-roll on top.
+    private func ingestLivePedometer(_ p: PedometerSample) {
+        guard pedoFrom != nil else { ingestPedometer(p); return }
+        var q = p
+        q.steps += stepOffset
+        if let d = p.distance { q.distance = d + meterOffset }
+        ingestPedometer(q)
+    }
+
     func ingestPedometer(_ p: PedometerSample) {
+        if isAuto { checkAutoStop() }
+        guard state != .finished else { return }
         if state == .recording, kind != .ride, let last = pedo.last, p.steps > last.steps {
             moving.evidence(p.time)
         }

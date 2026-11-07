@@ -36,7 +36,30 @@ struct LoopApp: App {
         // Restore at launch, not when a view appears: after a background relaunch by Core Location
         // the location session must be recreated immediately.
         let s = Session()
+        s.context = container.mainContext
         s.restoreDraft(context: container.mainContext)
+        // Re-create the geofence monitor at once: a background launch may be its exit event.
+        #if DEBUG
+        if let i = args.firstIndex(of: "-LoopFakeWake") {
+            let raw = i + 1 < args.count ? args[i + 1] : "walk"
+            let kind: ActivityHistorySample.Kind = raw == "ride" ? .cycling : raw == "run" ? .running : .walking
+            AutoStart.shared.history = FakeWakeHistory(kind: kind, minutes: 8)
+        }
+        if args.contains("-LoopAutoStartOn") { UserDefaults.standard.set(true, forKey: AutoStart.enabledKey) }
+        if args.contains("-LoopResetAutoAsk") {
+            UserDefaults.standard.removeObject(forKey: AutoStart.askDoneKey)
+            UserDefaults.standard.removeObject(forKey: AutoStart.enabledKey)
+        }
+        #endif
+        AutoStart.shared.boot(session: s)
+        #if DEBUG
+        if args.contains("-LoopFakeWake") {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                await AutoStart.shared.wake(reason: "fake wake", at: nil)
+            }
+        }
+        #endif
         _session = State(initialValue: s)
     }
 
@@ -71,8 +94,8 @@ enum LaunchOptions {
     static var healthAllowed: Bool { !isReplay || args.contains("-LoopReplayHealth") }
 
     @MainActor
-    static func makeRecorder() -> WorkoutRecorder {
-        let (loc, mot, clock) = makeSources(origin: Date())
+    static func makeRecorder(always: Bool = false) -> WorkoutRecorder {
+        let (loc, mot, clock) = makeSources(origin: Date(), always: always)
         let r = WorkoutRecorder(location: loc, motion: mot, clock: clock)
         r.draftStore = RecordingDraftStore.shared
         r.powerLog = PowerLog.shared
@@ -81,7 +104,7 @@ enum LaunchOptions {
 
     /// Sources and clock for a recorder. `origin` is where the clock starts (a restored replay
     /// continues from its saved time).
-    static func makeSources(origin: Date) -> (LocationSource, MotionSource, RecordingClock) {
+    static func makeSources(origin: Date, always: Bool = false) -> (LocationSource, MotionSource, RecordingClock) {
         #if DEBUG
         if isReplay {
             let clock = RecordingClock(scale: replaySpeed, origin: origin)
@@ -89,7 +112,7 @@ enum LaunchOptions {
             return (ReplayFeed(clock: clock), ReplayFeed(clock: clock), clock)
         }
         #endif
-        return (LiveLocationSource(), LiveMotionSource(), RecordingClock())
+        return (LiveLocationSource(always: always), LiveMotionSource(), RecordingClock())
     }
 }
 
