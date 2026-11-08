@@ -11,7 +11,7 @@ import UIKit
 final class AutoStart: NSObject {
     static let enabledKey = "autoStart"
     static let askDoneKey = "autoStartAskDone"
-    static let monitorName = "loop.autostart"
+    static let monitorName = "LoopAutoStart"
     static let regionID = "settled"
     static let radius: CLLocationDistance = 150
 

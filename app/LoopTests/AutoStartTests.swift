@@ -371,3 +371,13 @@ struct ArmingTests {
         #expect(AutoStart.armAction(for: stale, delivered: false, now: t0.addingTimeInterval(121), lastRequest: t0) == .requestFix)
     }
 }
+
+struct MonitorNameTests {
+    /// CLMonitor aborts the app on a name with anything but letters and digits.
+    @MainActor @Test func monitorNameIsAlphanumeric() {
+        for name in [AutoStart.monitorName, AutoStart.regionID] {
+            #expect(!name.isEmpty)
+            #expect(name.unicodeScalars.allSatisfy { ($0.isASCII) && CharacterSet.alphanumerics.contains($0) }, "\(name)")
+        }
+    }
+}
