@@ -511,19 +511,52 @@ struct RepairTests {
         try ModelContainer(for: Workout.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
     private let night = Date(timeIntervalSince1970: 1_794_161_280) // 2026-11-08T18:08Z
+    private let day9 = Date(timeIntervalSince1970: 1_794_229_200)  // 2026-11-09T13:00Z
+    private var w8: Repairs.Window { Repairs.windows[0] }
+    private var w9: Repairs.Window { Repairs.windows[1] }
 
-    private func piece(_ minutesAfter: Double, route: Bool = false, source: String = "recorded") -> Workout {
-        let s = night.addingTimeInterval(minutesAfter * 60)
+    private func piece(_ minutesAfter: Double, route: Bool = false, source: String = "recorded", base: Date? = nil,
+                       kind: ActivityKind = .walk) -> Workout {
+        let s = (base ?? night).addingTimeInterval(minutesAfter * 60)
         let pts = route ? [RoutePoint(lat: 25, lon: 55, alt: 0, t: s, speed: 1, hAcc: 5, cumMeters: 0, paused: nil)] : []
-        let w = Workout(kind: .walk, startDate: s, endDate: s.addingTimeInterval(606), movingSeconds: 618, distanceMeters: 600, route: pts)
+        let w = Workout(kind: kind, startDate: s, endDate: s.addingTimeInterval(606), movingSeconds: 618, distanceMeters: 600, route: pts)
         w.source = source
         return w
     }
 
-    @Test func selectorPicksOnlyGPSLessRecordedInWindow() {
+    /// A fake Health: records deletes, fails the ids in `failing`, lists `stored` (uuid, start).
+    private final class FakeHealth {
+        var deleted: [UUID] = []
+        var failing: Set<UUID> = []
+        var stored: [(UUID, Date)] = []
+        var ops: Repairs.HealthOps {
+            Repairs.HealthOps(delete: { id in
+                if self.failing.contains(id) { return false }
+                self.deleted.append(id); return true
+            }, loopWorkouts: { from, to in self.stored.filter { $0.1 >= from && $0.1 <= to }.map(\.0) })
+        }
+    }
+
+    private func walkHistory(_ start: Date, minutes: Double) -> ScriptedHistory {
+        ScriptedHistory([.init(start: start.addingTimeInterval(-600), kind: .stationary, confidence: .high),
+                         .init(start: start, kind: .walking, confidence: .high),
+                         .init(start: start.addingTimeInterval(minutes * 60), kind: .stationary, confidence: .high)])
+    }
+
+    private func tempDefaults() -> UserDefaults { UserDefaults(suiteName: UUID().uuidString)! }
+
+    @Test func selector8Nov() {
         let a = piece(10), b = piece(40)
         let all = [a, b, piece(70, route: true), piece(90, source: "motion"), piece(-60 * 5), piece(60 * 4)]
-        #expect(Set(Repairs.night8NovPieces(all).map(\.id)) == Set([a.id, b.id]))
+        #expect(Set(Repairs.pieces(all, in: w8).map(\.id)) == Set([a.id, b.id]))
+    }
+
+    @Test func selector9NovIncludesTheRun() {
+        let p40 = piece(87, base: day9), p41 = piece(103, base: day9), p42 = piece(117, base: day9)
+        let p45 = piece(290, base: day9, kind: .run)
+        let all = [p40, p41, p42, p45, piece(60, route: true, base: day9), piece(70, source: "motion", base: day9),
+                   piece(-30, base: day9), piece(6 * 60 + 5, base: day9)]
+        #expect(Set(Repairs.pieces(all, in: w9).map(\.id)) == Set([p40.id, p41.id, p42.id, p45.id]))
     }
 
     @Test func repairReplacesPiecesWithOneWalk() async throws {
@@ -532,38 +565,86 @@ struct RepairTests {
         pieces[2].healthKitID = UUID()
         pieces.forEach { ctx.insert($0) }
         try ctx.save()
-        let hist = ScriptedHistory([.init(start: night.addingTimeInterval(-600), kind: .stationary, confidence: .high),
-                                    .init(start: night, kind: .walking, confidence: .high),
-                                    .init(start: night.addingTimeInterval(118 * 60), kind: .stationary, confidence: .high)])
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let dismissed = DismissedStore(url: dir.appendingPathComponent("d.json"))
         dismissed.add(start: night.addingTimeInterval(600), end: night.addingTimeInterval(1200), now: night)
-        let mh = MotionHistory(provider: hist, dismissed: dismissed)
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
-        var deletedHealth: [UUID] = []
-        let ok = await Repairs.night8NovOnce(ctx, history: mh, defaults: defaults, log: nil) { deletedHealth.append($0) }
-        #expect(ok)
-        #expect(deletedHealth == [pieces[2].healthKitID!])
+        let mh = MotionHistory(provider: walkHistory(night, minutes: 118), dismissed: dismissed)
+        let d = tempDefaults(), hk = FakeHealth()
+        #expect(await Repairs.repair(w8, ctx, history: mh, defaults: d, log: nil, health: hk.ops))
+        #expect(hk.deleted == [pieces[2].healthKitID!])
         let all = try ctx.fetch(FetchDescriptor<Workout>())
-        #expect(all.count == 1)
-        #expect(all.first?.source == "motion" && all.first?.startDate == night)
-        #expect(all.first.map { abs($0.endDate.timeIntervalSince(night) - 118 * 60) < 1 } == true)
-        #expect(defaults.bool(forKey: Repairs.night8NovKey))
-        #expect(await Repairs.night8NovOnce(ctx, history: mh, defaults: defaults, log: nil) { _ in } == false, "runs once")
+        #expect(all.count == 1 && all.first?.source == "motion" && all.first?.startDate == night)
+        #expect(d.bool(forKey: w8.repairKey))
+        #expect(await Repairs.repair(w8, ctx, history: mh, defaults: d, log: nil, health: hk.ops) == false, "runs once")
+    }
+
+    @Test func failedHealthDeleteKeepsPieceAndRetries() async throws {
+        let c = try container(), ctx = c.mainContext
+        let ok = piece(90, base: day9), bad = piece(110, base: day9)
+        ok.healthKitID = UUID(); bad.healthKitID = UUID()
+        ctx.insert(ok); ctx.insert(bad); try ctx.save()
+        let mh = MotionHistory(provider: walkHistory(day9.addingTimeInterval(85 * 60), minutes: 40), dismissed: nil)
+        let d = tempDefaults(), hk = FakeHealth()
+        hk.failing = [bad.healthKitID!]
+        #expect(await Repairs.repair(w9, ctx, history: mh, defaults: d, log: nil, health: hk.ops) == false)
+        var all = try ctx.fetch(FetchDescriptor<Workout>())
+        #expect(all.map(\.id) == [bad.id], "the failed one stays, the other went")
+        #expect(!d.bool(forKey: w9.repairKey))
+        #expect(!all.contains { $0.source == "motion" }, "no rescan yet")
+        hk.failing = []
+        #expect(await Repairs.repair(w9, ctx, history: mh, defaults: d, log: nil, health: hk.ops))
+        all = try ctx.fetch(FetchDescriptor<Workout>())
+        #expect(all.count == 1 && all.first?.source == "motion")
+        #expect(d.bool(forKey: w9.repairKey))
+    }
+
+    @Test func sweepDeletesOnlyUnreferencedInWindow() async throws {
+        let c = try container(), ctx = c.mainContext
+        let kept = piece(70, route: true); kept.healthKitID = UUID()
+        ctx.insert(kept); try ctx.save()
+        let orphan = UUID(), outside = UUID()
+        let hk = FakeHealth()
+        hk.stored = [(kept.healthKitID!, kept.startDate), (orphan, night.addingTimeInterval(100 * 60)),
+                     (outside, night.addingTimeInterval(-86400))]
+        let d = tempDefaults()
+        #expect(await Repairs.sweep(w8, ctx, defaults: d, log: nil, health: hk.ops) == false, "waits for the repair")
+        d.set(true, forKey: w8.repairKey)
+        #expect(await Repairs.sweep(w8, ctx, defaults: d, log: nil, health: hk.ops))
+        #expect(hk.deleted == [orphan])
+        #expect(await Repairs.sweep(w8, ctx, defaults: d, log: nil, health: hk.ops) == false, "once")
+    }
+
+    @Test func doneRepairDoesNotRerunButItsSweepRunsOnce() async throws {
+        let c = try container(), ctx = c.mainContext
+        let late = piece(30); ctx.insert(late); try ctx.save()   // a GPS-less piece that must now be left alone
+        let d = tempDefaults()
+        d.set(true, forKey: w8.repairKey)
+        d.set(true, forKey: w9.repairKey); d.set(true, forKey: w9.sweepKey)
+        let hk = FakeHealth()
+        let orphan = UUID()
+        hk.stored = [(orphan, night.addingTimeInterval(110 * 60))]
+        let mh = MotionHistory(provider: walkHistory(night, minutes: 118), dismissed: nil)
+        await Repairs.runAll(ctx, history: mh, defaults: d, log: nil, health: hk.ops)
+        #expect(try ctx.fetchCount(FetchDescriptor<Workout>()) == 1, "repair did not run again")
+        #expect(hk.deleted == [orphan] && d.bool(forKey: w8.sweepKey))
+        #expect(Repairs.repairsAttempted)
+        await Repairs.runAll(ctx, history: mh, defaults: d, log: nil, health: hk.ops)
+        #expect(hk.deleted == [orphan], "sweep once")
     }
 
     @Test func emptyMotionRecordDeletesNothing() async throws {
         let c = try container(), ctx = c.mainContext
         ctx.insert(piece(10)); try ctx.save()
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
-        let ok = await Repairs.night8NovOnce(ctx, history: MotionHistory(provider: ScriptedHistory([]), dismissed: nil),
-                                             defaults: defaults, log: nil) { _ in }
-        #expect(!ok && !defaults.bool(forKey: Repairs.night8NovKey))
+        let d = tempDefaults()
+        let ok = await Repairs.repair(w8, ctx, history: MotionHistory(provider: ScriptedHistory([]), dismissed: nil),
+                                      defaults: d, log: nil, health: FakeHealth().ops)
+        #expect(!ok && !d.bool(forKey: w8.repairKey))
         #expect(try ctx.fetchCount(FetchDescriptor<Workout>()) == 1)
     }
 
     @Test func healthRetryNeverPicksRepairPieces() {
-        let p = piece(10)
+        let p = piece(10), p9 = piece(300, base: day9, kind: .run)
+        #expect(Repairs.healthRetryCandidates([p9], now: day9.addingTimeInterval(3600 * 8), healthOn: true).isEmpty)
         #expect(Repairs.healthRetryCandidates([p], now: night.addingTimeInterval(3600), healthOn: true).isEmpty)
         let gps = piece(20, route: true)
         #expect(Repairs.healthRetryCandidates([p, gps], now: night.addingTimeInterval(3600), healthOn: true).map(\.id) == [gps.id])

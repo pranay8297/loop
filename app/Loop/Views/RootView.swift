@@ -144,7 +144,13 @@ struct RootView: View {
         }
         .task {
             WorkoutStore.correctMovingTimeOnce(ctx)
-            await Repairs.night8NovOnce(ctx, history: MotionHistory.shared)
+            #if DEBUG
+            // The fake motion record is relative to each window's end, so a repair would add fake walks.
+            if LaunchOptions.args.contains("-LoopFakeMotionHistory") { Repairs.repairsAttempted = true }
+            else { await Repairs.runAll(ctx, history: MotionHistory.shared) }
+            #else
+            await Repairs.runAll(ctx, history: MotionHistory.shared)
+            #endif
             // The retry on becoming active waits for the repair; run it now that the repair is done.
             await Repairs.retryHealth(ctx)
             await MotionHistory.shared.scanIfDue(ctx)

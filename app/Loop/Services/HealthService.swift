@@ -31,6 +31,20 @@ final class HealthService {
         }
     }
 
+    /// UUIDs of Loop's own Health workouts overlapping [from, to], or nil when the query fails.
+    func loopWorkoutIDs(from: Date, to: Date) async -> [UUID]? {
+        guard HKHealthStore.isHealthDataAvailable() else { return nil }
+        let p = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForObjects(from: HKSource.default()),
+            HKQuery.predicateForSamples(withStart: from, end: to, options: [])])
+        do {
+            return try await HKSampleQueryDescriptor(predicates: [.workout(p)], sortDescriptors: []).result(for: store).map(\.uuid)
+        } catch {
+            log.error("HealthKit query failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
     /// Returns the HealthKit workout UUID, or nil on any failure.
     func save(kind: ActivityKind, start: Date, end: Date, distanceMeters: Double, route: [RoutePoint]) async -> UUID? {
         guard HKHealthStore.isHealthDataAvailable(), kind.isGPS else { return nil }

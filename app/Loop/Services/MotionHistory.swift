@@ -191,6 +191,9 @@ final class MotionHistory {
     /// Returns how many were added, or nil when the motion record is unavailable or empty there.
     func rescan(_ ctx: ModelContext, from: Date, to: Date) async -> Int? {
         guard provider.isAuthorized else { return nil }
+        // Never alongside a scan: both read the store before inserting, so they would add the same walk twice.
+        while running { try? await Task.sleep(for: .milliseconds(100)) }
+        running = true; defer { running = false }
         let samples = await provider.activities(from: from, to: to)
         guard !samples.isEmpty else { return nil }
         let bouts = BoutDetector.detect(samples, now: to).bouts
