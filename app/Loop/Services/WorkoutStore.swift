@@ -40,6 +40,10 @@ enum WorkoutStore {
                         distanceMeters: r.distanceMeters, steps: r.steps, route: r.route, segments: r.segments)
         let named = await namer.name(for: namingInput(for: w, history: history, place: nil))
         w.name = named.name; w.nameReason = named.reason
+        if r.source == "motion" {
+            w.source = "motion"
+            w.nameReason = "Loop started this by itself but GPS gave no fixes, so the distance is from your steps."
+        }
         ctx.insert(w)
         removeDetected(overlapping: r.start, r.end, in: ctx)
         try? ctx.save()

@@ -105,6 +105,12 @@ final class AutoStart: NSObject {
             do {
                 for try await e in await m.events {
                     if Task.isCancelled { break }
+                    let state = switch e.state {
+                    case .satisfied: "satisfied"
+                    case .unsatisfied: "unsatisfied"
+                    default: "unknown"
+                    }
+                    await MainActor.run { self?.log?.log(.geofence, reason: "event: \(state)") }
                     if e.state == .unsatisfied { await self?.wake(reason: "left the area", at: nil) }
                 }
             } catch {}
@@ -148,11 +154,15 @@ final class AutoStart: NSObject {
         case .arm: break
         case .requestFix:
             lastFixRequest = now
+            log?.log(.geofence, reason: "fix requested")
             manager.requestLocation()
             return
-        case .nothing: return
+        case .nothing:
+            log?.log(.geofence, reason: "fix request suppressed")
+            return
         }
         guard let loc else { return }
+        log?.log(.geofence, reason: "armed: \(Int(loc.horizontalAccuracy.rounded())) m, \(Int(now.timeIntervalSince(loc.timestamp).rounded())) s old")
         let cond = CLMonitor.CircularGeographicCondition(center: loc.coordinate, radius: Self.radius)
         Task {
             await m.remove(Self.regionID)

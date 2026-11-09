@@ -381,3 +381,203 @@ struct MonitorNameTests {
         }
     }
 }
+
+private final class ScriptedHistory: MotionHistoryProvider {
+    var samples: [ActivityHistorySample]
+    var authorized = true
+    init(_ s: [ActivityHistorySample]) { samples = s }
+    var isAuthorized: Bool { authorized }
+    var queries = 0
+    func activities(from: Date, to: Date) async -> [ActivityHistorySample] { queries += 1; return samples.filter { $0.start <= to } }
+    func pedometer(from: Date, to: Date) async -> (steps: Int, distance: Double?, floors: Int?)? {
+        let m = to.timeIntervalSince(from) / 60
+        return (Int(m * 110), m * 80, nil)
+    }
+}
+
+@MainActor
+struct StillConfirmTests {
+    /// Auto walk with evidence to `t`, then nothing until t+25 min, when a late fix arrives.
+    private func run(history: ScriptedHistory) async throws -> (fired: [AutoStop.Reason], r: WorkoutRecorder, t: Date, late: Date, result: RecordingResult?) {
+        let clock = HandClock(t0)
+        let src = PushSource()
+        let r = WorkoutRecorder(location: src, motion: src, clock: clock)
+        r.history = history
+        var fired: [AutoStop.Reason] = []
+        var result: RecordingResult?
+        r.onAutoStop = { reason in fired.append(reason); result = r.finishAuto(reason) }
+        r.startAuto(kind: .run, from: t0, preroll: [])
+        for i in 0...200 {
+            clock.t = t0.addingTimeInterval(Double(i) * 3)
+            r.ingest(fix(clock.t, north: Double(i) * 4.2, speed: 1.4))
+        }
+        let t = clock.t
+        clock.t = t.addingTimeInterval(1500)
+        let late = clock.t
+        r.ingest(fix(late, north: 3000, speed: 1.4))
+        #expect(r.confirming || !fired.isEmpty)
+        try await Task.sleep(for: .milliseconds(100))
+        return (fired, r, t, late, result)
+    }
+
+    @Test func keptWalkingThroughTheGapDoesNotStop() async throws {
+        let o = try await run(history: ScriptedHistory([h(30, .walking, now: t0)]))
+        #expect(o.fired.isEmpty)
+        #expect(o.r.state == .recording && !o.r.confirming)
+        o.r.checkAutoStop()
+        #expect(o.fired.isEmpty, "the anchor moved forward")
+        let res = o.r.finish()
+        #expect(res.movingSeconds >= 600 + 1500 - 15, "\(res.movingSeconds)")
+        #expect(res.route.last?.t == o.late, "the held fix was replayed")
+    }
+
+    @Test func stationaryAfterAMinuteStopsThere() async throws {
+        let walkStart = t0.addingTimeInterval(-60)
+        let tEnd = t0.addingTimeInterval(600)
+        let o = try await run(history: ScriptedHistory([
+            .init(start: walkStart, kind: .walking, confidence: .high),
+            .init(start: tEnd.addingTimeInterval(60), kind: .stationary, confidence: .high)]))
+        #expect(o.fired == [.still])
+        #expect(o.result?.end == o.t.addingTimeInterval(60))
+        #expect(o.result?.route.contains { $0.t == o.late } == false, "the late fix is dropped")
+    }
+
+    @Test func unauthorizedFallsBackToLastEvidence() async throws {
+        let hist = ScriptedHistory([h(30, .walking, now: t0)])
+        hist.authorized = false
+        let o = try await run(history: hist)
+        #expect(o.fired == [.still])
+        #expect(o.result?.end == o.t)
+    }
+
+    @Test func samplesFlowingWithoutMovementStopAtOnce() {
+        let clock = HandClock(t0)
+        let src = PushSource()
+        let r = WorkoutRecorder(location: src, motion: src, clock: clock)
+        let hist = ScriptedHistory([h(30, .walking, now: t0)])
+        r.history = hist
+        var fired: [AutoStop.Reason] = []
+        var result: RecordingResult?
+        r.onAutoStop = { reason in fired.append(reason); result = r.finishAuto(reason) }
+        r.startAuto(kind: .run, from: t0, preroll: [])
+        for i in 0...200 {
+            clock.t = t0.addingTimeInterval(Double(i) * 3)
+            r.ingest(fix(clock.t, north: Double(i) * 4.2, speed: 1.4))
+        }
+        let t = clock.t
+        for i in 1...310 {   // standing: a fix every second, same place, no speed
+            clock.t = t.addingTimeInterval(Double(i))
+            r.ingest(fix(clock.t, north: 840, speed: 0))
+            if !fired.isEmpty { break }
+        }
+        #expect(fired == [.still])
+        #expect(!r.confirming && hist.queries == 0, "no motion-record query")
+        #expect(result?.end == t)
+    }
+
+    @Test func verdictRules() {
+        let t = t0
+        // Walking throughout: moving, evidence every 10 s.
+        guard case .moving(let ev, let last) = StillCheck.decide([.init(start: t.addingTimeInterval(-60), kind: .walking, confidence: .medium)],
+                                                                 lastEvidence: t, now: t.addingTimeInterval(600)) else { Issue.record("not moving"); return }
+        #expect(ev.count == 60 && last == t.addingTimeInterval(600))
+        // Low confidence counts as not moving.
+        #expect(StillCheck.decide([.init(start: t, kind: .walking, confidence: .low)], lastEvidence: t, now: t.addingTimeInterval(600))
+                == .still(cut: t, evidence: []))
+    }
+}
+
+struct GPSLessTests {
+    @Test func noFixSavesPedometerDistanceAsMotion() {
+        let r = RecordingResult(kind: .run, start: t0, end: t0.addingTimeInterval(1800), movingSeconds: 1800,
+                                distanceMeters: 700, steps: 3000, route: [], segments: [], pedometerMeters: 2400)
+        let out = AutoStop.final(r)
+        #expect(out?.source == "motion" && out?.distanceMeters == 2400 && out?.kind == .walk)
+    }
+
+    @Test func withFixesUnchanged() {
+        let p = RoutePoint(lat: 25, lon: 55, alt: 0, t: t0, speed: 1, hAcc: 5, cumMeters: 0, paused: nil)
+        var q = p; q.t = t0.addingTimeInterval(1800); q.cumMeters = 2000
+        let r = RecordingResult(kind: .run, start: t0, end: q.t, movingSeconds: 1800, distanceMeters: 2000, steps: nil,
+                                route: [p, q], segments: [], pedometerMeters: 2400)
+        let out = AutoStop.final(r)
+        #expect(out?.source == "recorded" && out?.distanceMeters == 2000)
+    }
+}
+
+@MainActor
+struct RepairTests {
+    private func container() throws -> ModelContainer {
+        try ModelContainer(for: Workout.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
+    private let night = Date(timeIntervalSince1970: 1_794_161_280) // 2026-11-08T18:08Z
+
+    private func piece(_ minutesAfter: Double, route: Bool = false, source: String = "recorded") -> Workout {
+        let s = night.addingTimeInterval(minutesAfter * 60)
+        let pts = route ? [RoutePoint(lat: 25, lon: 55, alt: 0, t: s, speed: 1, hAcc: 5, cumMeters: 0, paused: nil)] : []
+        let w = Workout(kind: .walk, startDate: s, endDate: s.addingTimeInterval(606), movingSeconds: 618, distanceMeters: 600, route: pts)
+        w.source = source
+        return w
+    }
+
+    @Test func selectorPicksOnlyGPSLessRecordedInWindow() {
+        let a = piece(10), b = piece(40)
+        let all = [a, b, piece(70, route: true), piece(90, source: "motion"), piece(-60 * 5), piece(60 * 4)]
+        #expect(Set(Repairs.night8NovPieces(all).map(\.id)) == Set([a.id, b.id]))
+    }
+
+    @Test func repairReplacesPiecesWithOneWalk() async throws {
+        let c = try container(), ctx = c.mainContext
+        let pieces = [piece(10), piece(30), piece(50)]
+        pieces[2].healthKitID = UUID()
+        pieces.forEach { ctx.insert($0) }
+        try ctx.save()
+        let hist = ScriptedHistory([.init(start: night.addingTimeInterval(-600), kind: .stationary, confidence: .high),
+                                    .init(start: night, kind: .walking, confidence: .high),
+                                    .init(start: night.addingTimeInterval(118 * 60), kind: .stationary, confidence: .high)])
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let dismissed = DismissedStore(url: dir.appendingPathComponent("d.json"))
+        dismissed.add(start: night.addingTimeInterval(600), end: night.addingTimeInterval(1200), now: night)
+        let mh = MotionHistory(provider: hist, dismissed: dismissed)
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        var deletedHealth: [UUID] = []
+        let ok = await Repairs.night8NovOnce(ctx, history: mh, defaults: defaults, log: nil) { deletedHealth.append($0) }
+        #expect(ok)
+        #expect(deletedHealth == [pieces[2].healthKitID!])
+        let all = try ctx.fetch(FetchDescriptor<Workout>())
+        #expect(all.count == 1)
+        #expect(all.first?.source == "motion" && all.first?.startDate == night)
+        #expect(all.first.map { abs($0.endDate.timeIntervalSince(night) - 118 * 60) < 1 } == true)
+        #expect(defaults.bool(forKey: Repairs.night8NovKey))
+        #expect(await Repairs.night8NovOnce(ctx, history: mh, defaults: defaults, log: nil) { _ in } == false, "runs once")
+    }
+
+    @Test func emptyMotionRecordDeletesNothing() async throws {
+        let c = try container(), ctx = c.mainContext
+        ctx.insert(piece(10)); try ctx.save()
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let ok = await Repairs.night8NovOnce(ctx, history: MotionHistory(provider: ScriptedHistory([]), dismissed: nil),
+                                             defaults: defaults, log: nil) { _ in }
+        #expect(!ok && !defaults.bool(forKey: Repairs.night8NovKey))
+        #expect(try ctx.fetchCount(FetchDescriptor<Workout>()) == 1)
+    }
+
+    @Test func healthRetryNeverPicksRepairPieces() {
+        let p = piece(10)
+        #expect(Repairs.healthRetryCandidates([p], now: night.addingTimeInterval(3600), healthOn: true).isEmpty)
+        let gps = piece(20, route: true)
+        #expect(Repairs.healthRetryCandidates([p, gps], now: night.addingTimeInterval(3600), healthOn: true).map(\.id) == [gps.id])
+    }
+
+    @Test func healthRetrySelection() {
+        let now = night.addingTimeInterval(86400)
+        let missing = piece(-60 * 6)
+        let saved = piece(20); saved.healthKitID = UUID()
+        let motion = piece(40, source: "motion")
+        let old = piece(-8 * 1440)
+        let checkIn = piece(60); checkIn.isCheckIn = true
+        let all = [missing, saved, motion, old, checkIn]
+        #expect(Repairs.healthRetryCandidates(all, now: now, healthOn: true).map(\.id) == [missing.id])
+        #expect(Repairs.healthRetryCandidates(all, now: now, healthOn: false).isEmpty)
+    }
+}

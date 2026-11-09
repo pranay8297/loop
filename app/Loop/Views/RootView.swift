@@ -16,6 +16,11 @@ final class Session {
     func beginAuto(kind: ActivityKind, from: Date, preroll: [PedometerSample]) {
         guard recorder == nil else { return }
         let r = LaunchOptions.makeRecorder(always: true)
+        r.history = AutoStart.shared.history
+        #if DEBUG
+        // UI tests fake stillness by cutting the feeds; the fake motion record would say he kept walking.
+        if LaunchOptions.args.contains("-LoopFakeStillAfter") { r.history = nil }
+        #endif
         r.startAuto(kind: kind, from: from, preroll: preroll)
         attachAutoStop(r)
         saved = nil
@@ -55,7 +60,8 @@ final class Session {
         let usePlaces = defaults.object(forKey: "usePlaces") as? Bool ?? true
         let health = (defaults.object(forKey: "saveToHealth") as? Bool ?? true) && LaunchOptions.healthAllowed
         Task {
-            _ = await WorkoutStore.save(result, in: ctx, usePlaces: usePlaces, saveToHealth: health)
+            // A GPS-less pick-up stays out of Health, like other motion-record walks.
+            _ = await WorkoutStore.save(result, in: ctx, usePlaces: usePlaces, saveToHealth: health && result.source != "motion")
             r.draftStore?.clear()
             if recorder === r { recorder = nil; showingCover = false }
             toast = "Saved your \(result.kind.noun)"
@@ -86,7 +92,7 @@ final class Session {
             recorder = WorkoutRecorder.restore(d, location: loc, motion: mot, clock: clock,
                                                paused: paused, gap: max(0, clock.now().timeIntervalSince(d.savedAt)),
                                                draftStore: store, powerLog: PowerLog.shared)
-            if let r = recorder { attachAutoStop(r) }
+            if let r = recorder, r.isAuto { r.history = AutoStart.shared.history; attachAutoStop(r) }
             saved = nil
             showingCover = true
         }
@@ -138,6 +144,9 @@ struct RootView: View {
         }
         .task {
             WorkoutStore.correctMovingTimeOnce(ctx)
+            await Repairs.night8NovOnce(ctx, history: MotionHistory.shared)
+            // The retry on becoming active waits for the repair; run it now that the repair is done.
+            await Repairs.retryHealth(ctx)
             await MotionHistory.shared.scanIfDue(ctx)
             await NudgeScheduler.shared.replan(ctx)
             #if DEBUG
@@ -150,6 +159,7 @@ struct RootView: View {
                 PowerLog.shared?.log(.foreground)
                 Task {
                     await MotionHistory.shared.scanIfDue(ctx)
+                    await Repairs.retryHealth(ctx)
                     await NudgeScheduler.shared.replan(ctx)
                 }
             }

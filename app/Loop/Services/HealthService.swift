@@ -15,6 +15,22 @@ final class HealthService {
          HKQuantityType(.distanceWalkingRunning), HKQuantityType(.distanceCycling)]
     }
 
+    /// Deletes one of Loop's own Health workouts by its UUID. Returns true when it is gone.
+    @discardableResult
+    func delete(id: UUID) async -> Bool {
+        guard HKHealthStore.isHealthDataAvailable() else { return false }
+        do {
+            let query = HKSampleQueryDescriptor(predicates: [.workout(HKQuery.predicateForObject(with: id))], sortDescriptors: [])
+            let found = try await query.result(for: store)
+            guard !found.isEmpty else { return true }
+            try await store.delete(found)
+            return true
+        } catch {
+            log.error("HealthKit delete failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
     /// Returns the HealthKit workout UUID, or nil on any failure.
     func save(kind: ActivityKind, start: Date, end: Date, distanceMeters: Double, route: [RoutePoint]) async -> UUID? {
         guard HKHealthStore.isHealthDataAvailable(), kind.isGPS else { return nil }

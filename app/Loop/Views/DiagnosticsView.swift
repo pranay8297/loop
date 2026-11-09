@@ -148,6 +148,8 @@ struct DiagnosticsView: View {
         case .wake: "Woke"
         case .autoStart: "Started by itself"
         case .wakeIgnored: "Wake ignored"
+        case .geofence: "Geofence"
+        case .repair: "Repair"
         }
     }
 

@@ -112,7 +112,8 @@ enum LaunchOptions {
             return (ReplayFeed(clock: clock), ReplayFeed(clock: clock), clock)
         }
         #endif
-        return (LiveLocationSource(always: always), LiveMotionSource(), RecordingClock())
+        let loc: LocationSource = always ? BackgroundLocationSource() : LiveLocationSource()
+        return (loc, LiveMotionSource(), RecordingClock())
     }
 }
 

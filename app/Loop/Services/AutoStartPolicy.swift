@@ -96,6 +96,13 @@ enum AutoStop {
     /// is at least 10% of the distance; anything under the motion-record minimums is dropped.
     static func final(_ r: RecordingResult) -> RecordingResult? {
         var out = r
+        // No GPS fix at all: distance from the pedometer, saved like a motion-record pick-up (no empty map).
+        if !r.route.contains(where: { !$0.isPaused }) {
+            out.distanceMeters = r.kind == .ride ? 0 : max(r.distanceMeters, r.pedometerMeters ?? 0)
+            out.source = "motion"
+            out.route = []
+            out.segments = []
+        }
         if r.kind == .ride {
             return r.movingSeconds >= BoutDetector.minRide ? r : nil
         }
@@ -110,5 +117,36 @@ enum AutoStop {
         }
         let minimum = out.kind == .run ? BoutDetector.minRun : BoutDetector.minWalk
         return out.movingSeconds >= minimum ? out : nil
+    }
+}
+
+/// Suspension is not stillness: a "still" stop is confirmed against the motion record. Pure.
+enum StillCheck {
+    enum Verdict: Equatable {
+        /// Stop; `cut` is where the still stretch began. `evidence` is movement before it.
+        case still(cut: Date, evidence: [Date])
+        /// He kept moving: add `evidence` and carry on; `lastMove` is the end of the last movement.
+        case moving(evidence: [Date], lastMove: Date)
+    }
+    static let every: TimeInterval = 10
+
+    static func decide(_ raw: [ActivityHistorySample], lastEvidence: Date, now: Date) -> Verdict {
+        let s = raw.sorted { $0.start < $1.start }
+        var moving: [(Date, Date)] = []
+        for (i, x) in s.enumerated() where [.walking, .running, .cycling].contains(x.kind) && x.confidence >= .medium {
+            let end = min(i + 1 < s.count ? s[i + 1].start : now, now)
+            let a = max(x.start, lastEvidence)
+            if end > a { moving.append((a, end)) }
+        }
+        var cursor = lastEvidence
+        var evidence: [Date] = []
+        for (a, b) in moving {
+            if a.timeIntervalSince(cursor) >= AutoStop.stillAfter { return .still(cut: cursor, evidence: evidence) }
+            var t = max(a, cursor)
+            while t < b { t = min(t.addingTimeInterval(every), b); evidence.append(t) }
+            cursor = max(cursor, b)
+        }
+        if now.timeIntervalSince(cursor) >= AutoStop.stillAfter { return .still(cut: cursor, evidence: evidence) }
+        return .moving(evidence: evidence, lastMove: cursor)
     }
 }

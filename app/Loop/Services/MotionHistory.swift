@@ -82,6 +82,16 @@ final class DismissedStore: @unchecked Sendable {
     }
 
     func clear() { try? FileManager.default.removeItem(at: url) }
+
+    /// Drops ranges that lie inside [start, end]. Returns how many went.
+    @discardableResult
+    func remove(within start: Date, _ end: Date, now: Date = Date()) -> Int {
+        let all = load(now: now)
+        let kept = all.filter { !($0.start >= start && $0.end <= end) }
+        guard kept.count != all.count else { return 0 }
+        try? JSONEncoder().encode(kept).write(to: url, options: .atomic)
+        return all.count - kept.count
+    }
 }
 
 /// Adds walks, runs and rides from the motion record as workouts without a route.
@@ -174,6 +184,33 @@ final class MotionHistory {
         else if result.bouts.isEmpty { cursor = max(from, now.addingTimeInterval(-BoutDetector.openWithin)) }
         if useCursor { defaults.set(cursor, forKey: Self.cursorKey) }
         if added > 0 { try? ctx.save() }
+        return added
+    }
+
+    /// Adds the bouts in a fixed window, like a scan but ignoring the cursor and leaving it alone.
+    /// Returns how many were added, or nil when the motion record is unavailable or empty there.
+    func rescan(_ ctx: ModelContext, from: Date, to: Date) async -> Int? {
+        guard provider.isAuthorized else { return nil }
+        let samples = await provider.activities(from: from, to: to)
+        guard !samples.isEmpty else { return nil }
+        let bouts = BoutDetector.detect(samples, now: to).bouts
+        let existing = ((try? ctx.fetch(FetchDescriptor<Workout>())) ?? []).map { ($0.startDate, $0.endDate) }
+        let skip = existing + (dismissed?.load() ?? []).map { ($0.start, $0.end) }
+        var added = 0
+        for b in bouts where !skip.contains(where: { Self.overlap(b.start, b.end, $0.0, $0.1) >= Self.minOverlap }) {
+            let p = await provider.pedometer(from: b.start, to: b.end)
+            let w = Workout(kind: b.kind, startDate: b.start, endDate: b.end, movingSeconds: b.movingSeconds,
+                            distanceMeters: b.kind == .ride ? 0 : (p?.distance ?? 0), steps: p?.steps)
+            w.source = "motion"
+            w.floors = p?.floors
+            let input = NamingInput(start: b.start, timeZone: .current, latitude: nil, longitude: nil, place: nil,
+                                    shape: .pointToPoint, kind: b.kind, hasWalkSegments: false, highlights: [])
+            w.name = await WorkoutStore.namer.name(for: input).name
+            w.nameReason = Self.reason
+            ctx.insert(w)
+            added += 1
+        }
+        try? ctx.save()
         return added
     }
 

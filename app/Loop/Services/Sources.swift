@@ -66,20 +66,15 @@ class RecordingClock: @unchecked Sendable {
 // MARK: Live
 
 final class LiveLocationSource: LocationSource {
-    /// `.always` for recordings Loop started by itself (they may begin in the background).
-    let always: Bool
-    init(always: Bool = false) { self.always = always }
     private var task: Task<Void, Never>?
     private var background: CLBackgroundActivitySession?
     private var service: CLServiceSession?
 
     func fixes() -> AsyncStream<LocationFix> {
         AsyncStream { continuation in
-            // Keeps updates flowing with the screen locked (blue indicator). Apple: create it while the app
-            // is in the foreground. With Always, a recording started from a background wake does not need it.
-            let active = MainActor.assumeIsolated { UIApplication.shared.applicationState != .background }
-            if !always || active { background = CLBackgroundActivitySession() }
-            service = CLServiceSession(authorization: always ? .always : .whenInUse)
+            // Keeps updates flowing with the screen locked (blue indicator).
+            background = CLBackgroundActivitySession()
+            service = CLServiceSession(authorization: .whenInUse)
             task = Task {
                 do {
                     for try await update in CLLocationUpdate.liveUpdates(.fitness) {
@@ -101,6 +96,69 @@ final class LiveLocationSource: LocationSource {
         task?.cancel(); task = nil
         background?.invalidate(); background = nil
         service?.invalidate(); service = nil
+    }
+}
+
+/// GPS for recordings Loop started by itself. Classic `CLLocationManager` standard updates: with Always and
+/// the `location` background mode they can start from a background launch (a significant-change or
+/// geofence wake), and while they flow iOS keeps the app running, so the 1 s tick keeps going too.
+final class BackgroundLocationSource: NSObject, LocationSource, CLLocationManagerDelegate {
+    private var manager: CLLocationManager?
+    private var continuation: AsyncStream<LocationFix>.Continuation?
+    private var bgTask: UIBackgroundTaskIdentifier = .invalid
+    private var gotFirstFix = false
+
+    func fixes() -> AsyncStream<LocationFix> {
+        AsyncStream { c in
+            continuation = c
+            let start = { [self] in
+                // Hold the background launch awake until the first fix (or 30 s): updates take over then.
+                bgTask = UIApplication.shared.beginBackgroundTask(withName: "LoopAutoStart") { [weak self] in self?.endTask() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in self?.endTask() }
+                let m = CLLocationManager()
+                m.delegate = self
+                m.allowsBackgroundLocationUpdates = true
+                m.pausesLocationUpdatesAutomatically = false
+                m.showsBackgroundLocationIndicator = true
+                m.activityType = .fitness
+                m.desiredAccuracy = kCLLocationAccuracyBest
+                m.distanceFilter = kCLDistanceFilterNone
+                manager = m
+                m.startUpdatingLocation()
+            }
+            if Thread.isMainThread { start() } else { DispatchQueue.main.sync(execute: start) }
+            c.onTermination = { [weak self] _ in DispatchQueue.main.async { self?.stop() } }
+        }
+    }
+
+    private func endTask() {
+        guard bgTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(bgTask)
+        bgTask = .invalid
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if !gotFirstFix, !locations.isEmpty {
+            gotFirstFix = true
+            print("Loop: background location source first fix")
+            endTask()
+        }
+        for l in locations {
+            continuation?.yield(LocationFix(lat: l.coordinate.latitude, lon: l.coordinate.longitude, altitude: l.altitude,
+                                            speed: l.speed, hAcc: l.horizontalAccuracy, timestamp: l.timestamp,
+                                            isStationary: nil))
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
+
+    func stop() {
+        guard let m = manager else { return }
+        m.stopUpdatingLocation()
+        m.allowsBackgroundLocationUpdates = false
+        manager = nil
+        continuation?.finish(); continuation = nil
+        endTask()
     }
 }
 

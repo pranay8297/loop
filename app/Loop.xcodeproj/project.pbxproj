@@ -15,6 +15,7 @@
 		106EBDA3A074C7578ABB396A /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96800E6F035DB56EACB3D10D /* Components.swift */; };
 		17ABEBB26603E4526CF1AEF7 /* citypack.json in Resources */ = {isa = PBXBuildFile; fileRef = 012A32E180A564FE6EFE599F /* citypack.json */; };
 		188F2B731D71B7D5730F5D72 /* RecordingDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FBBBCF5EDA032778ADDD3E /* RecordingDraft.swift */; };
+		1CB91B312FDC44CC5D2B92F1 /* Repairs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49306E038A98E218A7FBB557 /* Repairs.swift */; };
 		3031E7641B99D5B48F779EEB /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 823555AB18977C85AE97D8ED /* DiagnosticsView.swift */; };
 		34FDD1CFA0351A29C5C29529 /* AutoStartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F95FD1D59711EF98DA8C9D4 /* AutoStartTests.swift */; };
 		353819D297102F39F381D24D /* PersonalHeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 087F1DCC1C8E55DD9BF0944F /* PersonalHeat.swift */; };
@@ -99,6 +100,7 @@
 		2FFB6BC2285A52F3E5FC33D0 /* Namer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Namer.swift; sourceTree = "<group>"; };
 		3985145F42A0F2DC204A5242 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		43A5C66C9C25719441D6005B /* ReplayRoute.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ReplayRoute.json; sourceTree = "<group>"; };
+		49306E038A98E218A7FBB557 /* Repairs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repairs.swift; sourceTree = "<group>"; };
 		4991CF9E585A2E4D956DC1D3 /* HomeMapBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMapBackground.swift; sourceTree = "<group>"; };
 		4FDDFA0736EA07978B4C60CD /* NudgeScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NudgeScheduler.swift; sourceTree = "<group>"; };
 		5AC331779ACE5585083C8EED /* BatteryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryTests.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 				78D4593136A766A1C4085A1D /* PlaceResolver.swift */,
 				C35241A931D7F1CDBC56CEA5 /* PowerLog.swift */,
 				E6FBBBCF5EDA032778ADDD3E /* RecordingDraft.swift */,
+				49306E038A98E218A7FBB557 /* Repairs.swift */,
 				AB779E0681A3F91971A6D218 /* SolarCalculator.swift */,
 				2728260204E225FA8CC53584 /* Sources.swift */,
 				9E25D7AC6BA29A37FDC7030C /* Stats.swift */,
@@ -503,6 +506,7 @@
 				E68F57AADE8E741FC450DFC8 /* PowerLog.swift in Sources */,
 				188F2B731D71B7D5730F5D72 /* RecordingDraft.swift in Sources */,
 				D94EBE74A0CF242C06CB22F1 /* RecordingView.swift in Sources */,
+				1CB91B312FDC44CC5D2B92F1 /* Repairs.swift in Sources */,
 				5E8490FD3CD05461F8C1E3B9 /* RootView.swift in Sources */,
 				0A6980D884A362B92F472EC7 /* RouteDrawing.swift in Sources */,
 				73985613F950354C101438A2 /* ShareScreen.swift in Sources */,
